@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
-	"strings"
+	"slices"
 )
 
 type Kind byte
@@ -284,16 +284,22 @@ func (m *Message) Parse() (any, error) {
 		return CloseComplete{}, nil
 	case KindCommandComplete:
 		var c CommandComplete
-		var sb strings.Builder
-		for _, v := range m.body {
-			if v == '\x00' {
-				break
-			}
-			sb.WriteByte(v)
-		}
-		c.Tag = sb.String()
+		tag, _ := readString(m.body)
+		c.Tag = tag
+		return c, nil
+	case KindCopyData:
+		var c CopyData
+		copy(c.Data, m.body)
 		return c, nil
 	default:
 		return Unknown{}, nil
 	}
+}
+
+func readString(b []byte) (string, []byte) {
+	ndx := slices.Index(b, '\x00')
+	if ndx > -1 {
+		return string(b[:ndx]), b[ndx+1:]
+	}
+	return string(b), nil
 }

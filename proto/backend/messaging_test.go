@@ -8,6 +8,44 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestReadString(t *testing.T) {
+	t.Run("iterative", func(t *testing.T) {
+		b := []byte{'a', 'b', 'c', '\x00', 'd', 'e', 'f', '\x00', 'g', 'h', 'i'}
+
+		first, b := readString(b)
+		require.Equal(t, "abc", first)
+		require.Equal(t, []byte{'d', 'e', 'f', '\x00', 'g', 'h', 'i'}, b)
+
+		second, b := readString(b)
+		require.Equal(t, "def", second)
+		require.Equal(t, []byte{'g', 'h', 'i'}, b)
+
+		third, b := readString(b)
+		require.Equal(t, "ghi", third)
+		require.Equal(t, []byte(nil), b)
+
+		fourth, b := readString(b)
+		require.Equal(t, "", fourth)
+		require.Equal(t, []byte(nil), b)
+	})
+
+	t.Run("last_character_null", func(t *testing.T) {
+		b := []byte{'a', 'b', 'c', '\x00'}
+
+		first, b := readString(b)
+		require.Equal(t, "abc", first)
+		require.Equal(t, []byte{}, b)
+	})
+
+	t.Run("only_character_null", func(t *testing.T) {
+		b := []byte{'\x00'}
+
+		first, b := readString(b)
+		require.Equal(t, "", first)
+		require.Equal(t, []byte{}, b)
+	})
+}
+
 func TestParseMessage(t *testing.T) {
 	t.Run("AuthenticationOk", func(t *testing.T) {
 		var buf bytes.Buffer
