@@ -8,6 +8,36 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestReadInt8(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		b := []byte{}
+
+		first, b := readInt8(b)
+		require.Equal(t, int8(0), first)
+		require.Equal(t, []byte(nil), b)
+	})
+
+	t.Run("one", func(t *testing.T) {
+		b := []byte{byte(1)}
+
+		first, b := readInt8(b)
+		require.Equal(t, int8(1), first)
+		require.Equal(t, []byte{}, b)
+	})
+
+	t.Run("two", func(t *testing.T) {
+		b := []byte{byte(1), byte(2)}
+
+		first, b := readInt8(b)
+		require.Equal(t, int8(1), first)
+		require.Equal(t, []byte{byte(2)}, b)
+
+		second, b := readInt8(b)
+		require.Equal(t, int8(2), second)
+		require.Equal(t, []byte{}, b)
+	})
+}
+
 func TestReadString(t *testing.T) {
 	t.Run("iterative", func(t *testing.T) {
 		b := []byte{'a', 'b', 'c', '\x00', 'd', 'e', 'f', '\x00', 'g', 'h', 'i'}

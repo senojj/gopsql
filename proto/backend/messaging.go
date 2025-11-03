@@ -1,10 +1,15 @@
 package backend
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"io"
-	"slices"
+)
+
+var (
+	ErrShortRead     = errors.New("short read")
+	ErrValueOverflow = errors.New("value too large")
 )
 
 type Kind byte
@@ -51,139 +56,284 @@ const (
 	TxStatusError  TxStatus = 'E'
 )
 
-type (
-	AuthenticationOk struct{}
+type Unmarshaler interface {
+	Unmarshal([]byte) error
+}
 
-	AuthenticationKerberosV5 struct{}
+type noop struct{}
 
-	AuthenticationCleartextPassword struct{}
+func (n *noop) Unmarshal(b []byte) error {
+	return nil
+}
 
-	AuthenticationMD5Password struct {
-		Salt [4]byte
+type AuthenticationOk struct {
+	noop
+}
+
+type AuthenticationKerberosV5 struct {
+	noop
+}
+
+type AuthenticationCleartextPassword struct {
+	noop
+}
+
+type AuthenticationMD5Password struct {
+	Salt [4]byte
+}
+
+func (a *AuthenticationMD5Password) Unmarshal(b []byte) error {
+	copy(a.Salt[:], b)
+	return nil
+}
+
+type AuthenticationGSS struct {
+	noop
+}
+
+type AuthenticationGSSContinue struct {
+	Data []byte
+}
+
+func (a *AuthenticationGSSContinue) Unmarshal(b []byte) error {
+	copy(a.Data, b)
+	return nil
+}
+
+type AuthenticationSSPI struct {
+	noop
+}
+
+type AuthenticationSASL struct {
+	Mechanisms []string
+}
+
+func (a *AuthenticationSASL) Unmarshal(b []byte) error {
+	for len(b) > 1 {
+		var mechanism string
+		mechanism, b = readString(b)
+		a.Mechanisms = append(a.Mechanisms, mechanism)
 	}
+	return nil
+}
 
-	AuthenticationGSS struct{}
+type AuthenticationSASLContinue struct {
+	Data []byte
+}
 
-	AuthenticationGSSContinue struct {
-		Data []byte
+func (a *AuthenticationSASLContinue) Unmarshal(b []byte) error {
+	copy(a.Data, b)
+	return nil
+}
+
+type AuthenticationSASLFinal struct {
+	Data []byte
+}
+
+func (a *AuthenticationSASLFinal) Unmarshal(b []byte) error {
+	copy(a.Data, b)
+	return nil
+}
+
+type BackendKeyData struct {
+	ProcessID int32
+	SecretKey []byte
+}
+
+func (k *BackendKeyData) Unmarshal(b []byte) error {
+	if len(b) < 4 {
+		return ErrShortRead
 	}
-
-	AuthenticationSSPI struct{}
-
-	AuthenticationSASL struct {
-		Mechanisms []string
+	processID, b := readInt32(b)
+	k.ProcessID = processID
+	if len(b) < 4 {
+		return ErrShortRead
 	}
-
-	AuthenticationSASLContinue struct {
-		Data []byte
+	if len(b) > 256 {
+		return ErrValueOverflow
 	}
+	copy(k.SecretKey, b)
+	return nil
+}
 
-	AuthenticationSASLFinal struct {
-		Data []byte
+type BindComplete struct {
+	noop
+}
+
+type CloseComplete struct {
+	noop
+}
+
+type CommandComplete struct {
+	Tag string
+}
+
+func (c *CommandComplete) Unmarshal(b []byte) error {
+	tag, _ := readString(b)
+	c.Tag = tag
+	return nil
+}
+
+type CopyData struct {
+	Data []byte
+}
+
+func (c *CopyData) Unmarshal(b []byte) error {
+	copy(c.Data, b)
+	return nil
+}
+
+type CopyDone struct {
+	noop
+}
+
+type CopyInResponse struct {
+	Format  Format
+	Columns []Format
+}
+
+func (c *CopyInResponse) Unmarshal(b []byte) error {
+	format, b := readInt8(b)
+	if len(b) < 2 {
+		return ErrShortRead
 	}
-
-	BackendKeyData struct {
-		ProcessID int32
-		SecretKey []byte
+	columns, b := readInt16(b)
+	if len(b) < int(columns)*2 {
+		return ErrShortRead
 	}
-
-	BindComplete struct{}
-
-	CloseComplete struct{}
-
-	CommandComplete struct {
-		Tag string
+	c.Format = Format(format)
+	c.Columns = make([]Format, int(columns))
+	for i := range len(c.Columns) {
+		var format int16
+		format, b = readInt16(b)
+		c.Columns[i] = Format(format)
 	}
+	return nil
+}
 
-	CopyData struct {
-		Data []byte
+type CopyOutResponse struct {
+	Format  Format
+	Columns []Format
+}
+
+func (c *CopyOutResponse) Unmarshal(b []byte) error {
+	format, b := readInt8(b)
+	if len(b) < 2 {
+		return ErrShortRead
 	}
-
-	CopyDone struct{}
-
-	CopyInResponse struct {
-		Format  Format
-		Columns []Format
+	columns, b := readInt16(b)
+	if len(b) < int(columns)*2 {
+		return ErrShortRead
 	}
-
-	CopyOutResponse struct {
-		Format  Format
-		Columns []Format
+	c.Format = Format(format)
+	c.Columns = make([]Format, int(columns))
+	for i := range len(c.Columns) {
+		var format int16
+		format, b = readInt16(b)
+		c.Columns[i] = Format(format)
 	}
+	return nil
+}
 
-	CopyBothResponse struct {
-		Format  Format
-		Columns []Format
+type CopyBothResponse struct {
+	Format  Format
+	Columns []Format
+}
+
+func (c *CopyBothResponse) Unmarshal(b []byte) error {
+	format, b := readInt8(b)
+	if len(b) < 2 {
+		return ErrShortRead
 	}
-
-	DataRow struct {
-		// First dimention is columns (can have 0 elements).
-		// Second dimension is value data (can have 0 elements
-		// or be nil).
-		Columns [][]byte
+	columns, b := readInt16(b)
+	if len(b) < int(columns)*2 {
+		return ErrShortRead
 	}
-
-	EmptyQueryResponse struct{}
-
-	ErrorResponse struct {
-		Types  []byte
-		Values []string
+	c.Format = Format(format)
+	c.Columns = make([]Format, int(columns))
+	for i := range len(c.Columns) {
+		var format int16
+		format, b = readInt16(b)
+		c.Columns[i] = Format(format)
 	}
+	return nil
+}
 
-	FunctionCallResponse struct {
-		// Can be zero length or nil.
-		Result []byte
-	}
+type DataRow struct {
+	// First dimention is columns (can have 0 elements).
+	// Second dimension is value data (can have 0 elements
+	// or be nil).
+	Columns [][]byte
+}
 
-	NegotiateProtocolVersion struct {
-		MinorVersionSupported int32
-		UnrecognizedOptions   []string
-	}
+type EmptyQueryResponse struct {
+	noop
+}
 
-	NoData struct{}
+type ErrorResponse struct {
+	Types  []byte
+	Values []string
+}
 
-	NoticeResponse struct {
-		Types  []byte
-		Values []string
-	}
+type FunctionCallResponse struct {
+	// Can be zero length or nil.
+	Result []byte
+}
 
-	NotificationResponse struct {
-		ProcessID int32
-		Channel   string
-		Payload   string
-	}
+type NegotiateProtocolVersion struct {
+	MinorVersionSupported int32
+	UnrecognizedOptions   []string
+}
 
-	ParameterDescription struct {
-		Parameters []int32
-	}
+type NoData struct {
+	noop
+}
 
-	ParametetrStatus struct {
-		Name  string
-		Value string
-	}
+type NoticeResponse struct {
+	Types  []byte
+	Values []string
+}
 
-	ParseComplete struct{}
+type NotificationResponse struct {
+	ProcessID int32
+	Channel   string
+	Payload   string
+}
 
-	PortalSuspended struct{}
+type ParameterDescription struct {
+	Parameters []int32
+}
 
-	ReadyForQuery struct {
-		TxStatus TxStatus
-	}
+type ParametetrStatus struct {
+	Name  string
+	Value string
+}
 
-	RowDescription struct {
-		Names     []string
-		Tables    []int32
-		Columns   []int16
-		DataTypes []int32
-		Sizes     []int16
-		Modifiers []int32
-		Formats   []Format
-	}
+type ParseComplete struct {
+	noop
+}
 
-	Unknown struct{}
-)
+type PortalSuspended struct {
+	noop
+}
 
-var ErrShortRead = errors.New("short read")
+type ReadyForQuery struct {
+	TxStatus TxStatus
+}
+
+type RowDescription struct {
+	Names     []string
+	Tables    []int32
+	Columns   []int16
+	DataTypes []int32
+	Sizes     []int16
+	Modifiers []int32
+	Formats   []Format
+}
+
+type Unknown struct {
+	noop
+}
 
 type Message struct {
 	kind Kind
@@ -239,65 +389,123 @@ func (m *Message) Unmarshal(r io.Reader) error {
 func (m *Message) Parse() (any, error) {
 	switch m.kind {
 	case KindAuthentication:
-		s := int32(binary.BigEndian.Uint32(m.body[:4]))
+		s, b := readInt32(m.body)
 		switch s {
 		case 0:
-			return AuthenticationOk{}, nil
+			var a AuthenticationOk
+			err := a.Unmarshal(b)
+			return a, err
 		case 2:
-			return AuthenticationKerberosV5{}, nil
+			var a AuthenticationKerberosV5
+			err := a.Unmarshal(b)
+			return a, err
 		case 3:
-			return AuthenticationCleartextPassword{}, nil
+			var a AuthenticationCleartextPassword
+			err := a.Unmarshal(b)
+			return a, err
 		case 5:
 			var a AuthenticationMD5Password
-			copy(a.Salt[:], m.body[4:])
-			return a, nil
+			err := a.Unmarshal(b)
+			return a, err
 		case 7:
-			return AuthenticationGSS{}, nil
+			var a AuthenticationGSS
+			err := a.Unmarshal(b)
+			return a, err
 		case 8:
 			var a AuthenticationGSSContinue
-			copy(a.Data, m.body[4:])
-			return a, nil
+			err := a.Unmarshal(b)
+			return a, err
 		case 9:
-			return AuthenticationSSPI{}, nil
+			var a AuthenticationSSPI
+			err := a.Unmarshal(b)
+			return a, err
 		case 10:
-			return AuthenticationSASL{}, nil
+			var a AuthenticationSASL
+			err := a.Unmarshal(b)
+			return a, err
 		case 11:
 			var a AuthenticationSASLContinue
-			copy(a.Data, m.body[4:])
-			return a, nil
+			err := a.Unmarshal(b)
+			return a, err
 		case 12:
 			var a AuthenticationSASLFinal
-			copy(a.Data, m.body[4:])
-			return a, nil
+			err := a.Unmarshal(b)
+			return a, err
 		default:
-			return Unknown{}, nil
+			var a Unknown
+			err := a.Unmarshal(b)
+			return a, err
 		}
 	case KindKeyData:
-		processID := int32(binary.BigEndian.Uint32(m.body[:4]))
 		var k BackendKeyData
-		k.ProcessID = processID
-		copy(k.SecretKey, m.body[4:])
-		return k, nil
+		err := k.Unmarshal(m.body)
+		return k, err
 	case KindBindComplete:
-		return BindComplete{}, nil
+		var c BindComplete
+		err := c.Unmarshal(m.body)
+		return c, err
 	case KindCloseComplete:
-		return CloseComplete{}, nil
+		var c CloseComplete
+		err := c.Unmarshal(m.body)
+		return c, err
 	case KindCommandComplete:
 		var c CommandComplete
-		tag, _ := readString(m.body)
-		c.Tag = tag
-		return c, nil
+		err := c.Unmarshal(m.body)
+		return c, err
 	case KindCopyData:
 		var c CopyData
-		copy(c.Data, m.body)
-		return c, nil
+		err := c.Unmarshal(m.body)
+		return c, err
+	case KindCopyDone:
+		var c CopyDone
+		err := c.Unmarshal(m.body)
+		return c, err
+	case KindCopyInResponse:
+		var c CopyInResponse
+		err := c.Unmarshal(m.body)
+		return c, err
+	case KindCopyOutResponse:
+		var c CopyOutResponse
+		err := c.Unmarshal(m.body)
+		return c, err
+	case KindCopyBothResponse:
+		var c CopyBothResponse
+		err := c.Unmarshal(m.body)
+		return c, err
 	default:
 		return Unknown{}, nil
 	}
 }
 
+func readInt8(b []byte) (int8, []byte) {
+	var v int8
+	if len(b) > 0 {
+		v = int8(b[0])
+		return v, b[1:]
+	}
+	return v, nil
+}
+
+func readInt16(b []byte) (int16, []byte) {
+	var v int16
+	if len(b) > 1 {
+		v = int16(binary.BigEndian.Uint16(b[:2]))
+		return v, b[2:]
+	}
+	return v, nil
+}
+
+func readInt32(b []byte) (int32, []byte) {
+	var v int32
+	if len(b) > 3 {
+		v = int32(binary.BigEndian.Uint32(b[:4]))
+		return v, b[4:]
+	}
+	return v, nil
+}
+
 func readString(b []byte) (string, []byte) {
-	ndx := slices.Index(b, '\x00')
+	ndx := bytes.IndexByte(b, 0)
 	if ndx > -1 {
 		return string(b[:ndx]), b[ndx+1:]
 	}
