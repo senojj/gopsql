@@ -266,6 +266,24 @@ type DataRow struct {
 	Columns [][]byte
 }
 
+func (d *DataRow) Unmarshal(b []byte) error {
+	columns, b := readInt16(b)
+	for i := range columns {
+		if len(b) < 4 {
+			return ErrShortRead
+		}
+		var length int32
+		length, b = readInt32(b)
+		if length == -1 {
+			d.Columns[i] = nil
+			continue
+		}
+		d.Columns[i] = make([]byte, length)
+		copy(d.Columns[i], b[:length])
+		b = b[length:]
+	}
+}
+
 type EmptyQueryResponse struct {
 	noop
 }
@@ -472,6 +490,10 @@ func (m *Message) Parse() (any, error) {
 		var c CopyBothResponse
 		err := c.Unmarshal(m.body)
 		return c, err
+	case KindDataRow:
+		var d DataRow
+		err := d.Unmarshal(m.body)
+		return d, err
 	default:
 		return Unknown{}, nil
 	}
