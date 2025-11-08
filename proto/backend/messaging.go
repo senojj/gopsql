@@ -282,6 +282,7 @@ func (d *DataRow) Unmarshal(b []byte) error {
 		copy(d.Columns[i], b[:length])
 		b = b[length:]
 	}
+	return nil
 }
 
 type EmptyQueryResponse struct {

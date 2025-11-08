@@ -8,6 +8,47 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func writeKind(buf *bytes.Buffer, k Kind) {
+	buf.WriteByte(byte(k))
+}
+
+func writeInt32(buf *bytes.Buffer, i uint32) {
+	bytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(bytes, i)
+
+	_, _ = buf.Write(bytes)
+}
+
+func writeString(buf *bytes.Buffer, s string) {
+	bytes := []byte(s)
+	bytes = append(bytes, 0)
+
+	_, _ = buf.Write(bytes)
+}
+
+func writeBytes(buf *bytes.Buffer, b []byte) {
+	_, _ = buf.Write(b)
+}
+
+func as[T any](buf *bytes.Buffer, v *T) (bool, error) {
+	var m Message
+
+	err := m.Unmarshal(buf)
+	if err != nil {
+		return false, err
+	}
+
+	value, err := m.Parse()
+	if err != nil {
+		return false, err
+	}
+
+	var ok bool
+	*v, ok = value.(T)
+
+	return ok, nil
+}
+
 func TestReadInt8(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		b := []byte{}
@@ -80,63 +121,59 @@ func TestParseMessage(t *testing.T) {
 	t.Run("AuthenticationOk", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		_ = buf.WriteByte(byte(KindAuthentication))
+		writeKind(&buf, KindAuthentication)
+		writeInt32(&buf, 8)
+		writeInt32(&buf, 0)
 
-		byteLength := make([]byte, 4)
-		binary.BigEndian.PutUint32(byteLength, 8)
+		var result AuthenticationOk
 
-		_, _ = buf.Write(byteLength)
-
-		byteStatus := make([]byte, 4)
-		binary.BigEndian.PutUint32(byteStatus, 0)
-
-		_, _ = buf.Write(byteStatus)
-
-		var m Message
-
-		err := m.Unmarshal(&buf)
+		ok, err := as(&buf, &result)
 		require.NoError(t, err)
+		require.True(t, ok)
+	})
 
-		require.Equal(t, KindAuthentication, m.kind)
-		require.Len(t, m.body, 4)
+	t.Run("AuthenticationKerberosV5", func(t *testing.T) {
+		var buf bytes.Buffer
 
-		v, err := m.Parse()
+		writeKind(&buf, KindAuthentication)
+		writeInt32(&buf, 8)
+		writeInt32(&buf, 2)
+
+		var result AuthenticationKerberosV5
+
+		ok, err := as(&buf, &result)
 		require.NoError(t, err)
+		require.True(t, ok)
+	})
 
-		_, ok := v.(AuthenticationOk)
+	t.Run("AuthenticationCleartextPassword", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		writeKind(&buf, KindAuthentication)
+		writeInt32(&buf, 8)
+		writeInt32(&buf, 3)
+
+		var result AuthenticationCleartextPassword
+
+		ok, err := as(&buf, &result)
+		require.NoError(t, err)
 		require.True(t, ok)
 	})
 
 	t.Run("AuthenticationMD5Password", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		_ = buf.WriteByte(byte(KindAuthentication))
+		writeKind(&buf, KindAuthentication)
+		writeInt32(&buf, 12)             // messsage length
+		writeInt32(&buf, 5)              // authentication indicator
+		writeBytes(&buf, []byte("abcd")) // salt
 
-		byteLength := make([]byte, 4)
-		binary.BigEndian.PutUint32(byteLength, 12)
+		var result AuthenticationMD5Password
 
-		_, _ = buf.Write(byteLength)
-
-		byteStatus := make([]byte, 4)
-		binary.BigEndian.PutUint32(byteStatus, 5)
-
-		_, _ = buf.Write(byteStatus)
-
-		_, _ = buf.WriteString("abcd")
-
-		var m Message
-
-		err := m.Unmarshal(&buf)
+		ok, err := as(&buf, &result)
 		require.NoError(t, err)
-
-		require.Equal(t, KindAuthentication, m.kind)
-		require.Len(t, m.body, 8)
-
-		v, err := m.Parse()
-		require.NoError(t, err)
-
-		a, ok := v.(AuthenticationMD5Password)
 		require.True(t, ok)
-		require.Equal(t, [4]byte{'a', 'b', 'c', 'd'}, a.Salt)
+
+		require.Equal(t, [4]byte{'a', 'b', 'c', 'd'}, result.Salt)
 	})
 }
