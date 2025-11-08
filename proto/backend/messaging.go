@@ -96,6 +96,7 @@ type AuthenticationGSSContinue struct {
 }
 
 func (a *AuthenticationGSSContinue) Unmarshal(b []byte) error {
+	a.Data = make([]byte, len(b))
 	copy(a.Data, b)
 	return nil
 }

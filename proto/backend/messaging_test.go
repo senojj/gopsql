@@ -176,4 +176,35 @@ func TestParseMessage(t *testing.T) {
 
 		require.Equal(t, [4]byte{'a', 'b', 'c', 'd'}, result.Salt)
 	})
+
+	t.Run("AuthenticationGSS", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		writeKind(&buf, KindAuthentication)
+		writeInt32(&buf, 8)
+		writeInt32(&buf, 7)
+
+		var result AuthenticationGSS
+
+		ok, err := as(&buf, &result)
+		require.NoError(t, err)
+		require.True(t, ok)
+	})
+
+	t.Run("AuthenticationGSSContinue", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		writeKind(&buf, KindAuthentication)
+		writeInt32(&buf, 13)
+		writeInt32(&buf, 8)
+		writeBytes(&buf, []byte("hello"))
+
+		var result AuthenticationGSSContinue
+
+		ok, err := as(&buf, &result)
+		require.NoError(t, err)
+		require.True(t, ok)
+
+		require.Equal(t, []byte("hello"), result.Data)
+	})
 }
