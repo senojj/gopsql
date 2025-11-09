@@ -41,7 +41,7 @@ const (
 	KindRowDescription           Kind = 'T'
 )
 
-type Format int
+type Format int16
 
 const (
 	FormatText   Format = 0
@@ -123,6 +123,7 @@ type AuthenticationSASLContinue struct {
 }
 
 func (a *AuthenticationSASLContinue) Unmarshal(b []byte) error {
+	a.Data = make([]byte, len(b))
 	copy(a.Data, b)
 	return nil
 }
@@ -132,6 +133,7 @@ type AuthenticationSASLFinal struct {
 }
 
 func (a *AuthenticationSASLFinal) Unmarshal(b []byte) error {
+	a.Data = make([]byte, len(b))
 	copy(a.Data, b)
 	return nil
 }
@@ -153,6 +155,7 @@ func (k *BackendKeyData) Unmarshal(b []byte) error {
 	if len(b) > 256 {
 		return ErrValueOverflow
 	}
+	k.SecretKey = make([]byte, len(b))
 	copy(k.SecretKey, b)
 	return nil
 }
@@ -180,6 +183,7 @@ type CopyData struct {
 }
 
 func (c *CopyData) Unmarshal(b []byte) error {
+	c.Data = make([]byte, len(b))
 	copy(c.Data, b)
 	return nil
 }
@@ -269,6 +273,8 @@ type DataRow struct {
 
 func (d *DataRow) Unmarshal(b []byte) error {
 	columns, b := readInt16(b)
+	d.Columns = make([][]byte, columns)
+
 	for i := range columns {
 		if len(b) < 4 {
 			return ErrShortRead
