@@ -41,6 +41,29 @@ const (
 	KindRowDescription           Kind = 'T'
 )
 
+type Field byte
+
+const (
+	FieldSeverity         Field = 'S'
+	FieldSeverityRaw      Field = 'V'
+	FieldCode             Field = 'C'
+	FieldMessage          Field = 'M'
+	FieldDetail           Field = 'D'
+	FieldHint             Field = 'H'
+	FieldPosition         Field = 'P'
+	FieldInternalPosition Field = 'p'
+	FieldInternalQuery    Field = 'q'
+	FieldWhere            Field = 'W'
+	FieldSchema           Field = 's'
+	FieldTable            Field = 't'
+	FieldColumn           Field = 'c'
+	FieldDataType         Field = 'd'
+	FieldConstraint       Field = 'n'
+	FieldFile             Field = 'F'
+	FieldLine             Field = 'L'
+	FieldRoutine          Field = 'R'
+)
+
 type Format int16
 
 const (
@@ -297,7 +320,7 @@ type EmptyQueryResponse struct {
 }
 
 type ErrorResponse struct {
-	Types  []byte
+	Fields []Field
 	Values []string
 }
 
@@ -316,7 +339,7 @@ type NoData struct {
 }
 
 type NoticeResponse struct {
-	Types  []byte
+	Fields []Field
 	Values []string
 }
 
@@ -502,6 +525,10 @@ func (m *Message) Parse() (any, error) {
 		var d DataRow
 		err := d.Unmarshal(m.body)
 		return d, err
+	case KindEmptyQueryResponse:
+		var e EmptyQueryResponse
+		err := c.Unmarshal(m.body)
+		return e, err
 	default:
 		return Unknown{}, nil
 	}

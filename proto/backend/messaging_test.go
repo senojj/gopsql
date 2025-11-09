@@ -41,14 +41,7 @@ func writeBytes(buf *bytes.Buffer, b []byte) {
 	_, _ = buf.Write(b)
 }
 
-func as[T any](buf *bytes.Buffer, v *T) (bool, error) {
-	var m Message
-
-	err := m.Unmarshal(buf)
-	if err != nil {
-		return false, err
-	}
-
+func as[T any](m Message, v *T) (bool, error) {
 	value, err := m.Parse()
 	if err != nil {
 		return false, err
@@ -128,17 +121,38 @@ func TestReadString(t *testing.T) {
 	})
 }
 
+func TestUnmarshalMessage(t *testing.T) {
+	var buf bytes.Buffer
+
+	writeKind(&buf, KindAuthentication)
+	writeInt32(&buf, 8)
+	writeInt32(&buf, 0)
+
+	var m Message
+
+	err := m.Unmarshal(&buf)
+	require.NoError(t, err)
+
+	require.Equal(t, KindAuthentication, m.kind)
+
+	expected := make([]byte, 4)
+	binary.BigEndian.PutUint32(expected, 0)
+	require.Equal(t, expected, m.body)
+}
+
 func TestParseMessage(t *testing.T) {
 	t.Run("AuthenticationOk", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindAuthentication)
-		writeInt32(&buf, 8)
 		writeInt32(&buf, 0)
+
+		var m Message
+		m.kind = KindAuthentication
+		m.body = buf.Bytes()
 
 		var result AuthenticationOk
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 	})
@@ -146,13 +160,15 @@ func TestParseMessage(t *testing.T) {
 	t.Run("AuthenticationKerberosV5", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindAuthentication)
-		writeInt32(&buf, 8)
 		writeInt32(&buf, 2)
+
+		var m Message
+		m.kind = KindAuthentication
+		m.body = buf.Bytes()
 
 		var result AuthenticationKerberosV5
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 	})
@@ -160,13 +176,15 @@ func TestParseMessage(t *testing.T) {
 	t.Run("AuthenticationCleartextPassword", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindAuthentication)
-		writeInt32(&buf, 8)
 		writeInt32(&buf, 3)
+
+		var m Message
+		m.kind = KindAuthentication
+		m.body = buf.Bytes()
 
 		var result AuthenticationCleartextPassword
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 	})
@@ -174,14 +192,16 @@ func TestParseMessage(t *testing.T) {
 	t.Run("AuthenticationMD5Password", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindAuthentication)
-		writeInt32(&buf, 12)             // messsage length
 		writeInt32(&buf, 5)              // authentication indicator
 		writeBytes(&buf, []byte("abcd")) // salt
 
+		var m Message
+		m.kind = KindAuthentication
+		m.body = buf.Bytes()
+
 		var result AuthenticationMD5Password
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 
@@ -191,13 +211,15 @@ func TestParseMessage(t *testing.T) {
 	t.Run("AuthenticationGSS", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindAuthentication)
-		writeInt32(&buf, 8)
 		writeInt32(&buf, 7)
+
+		var m Message
+		m.kind = KindAuthentication
+		m.body = buf.Bytes()
 
 		var result AuthenticationGSS
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 	})
@@ -205,14 +227,16 @@ func TestParseMessage(t *testing.T) {
 	t.Run("AuthenticationGSSContinue", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindAuthentication)
-		writeInt32(&buf, 13)
 		writeInt32(&buf, 8)
 		writeBytes(&buf, []byte("hello"))
 
+		var m Message
+		m.kind = KindAuthentication
+		m.body = buf.Bytes()
+
 		var result AuthenticationGSSContinue
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 
@@ -222,13 +246,15 @@ func TestParseMessage(t *testing.T) {
 	t.Run("AuthenticationSSPI", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindAuthentication)
-		writeInt32(&buf, 8)
 		writeInt32(&buf, 9)
+
+		var m Message
+		m.kind = KindAuthentication
+		m.body = buf.Bytes()
 
 		var result AuthenticationSSPI
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 	})
@@ -236,16 +262,18 @@ func TestParseMessage(t *testing.T) {
 	t.Run("AuthenticationSASL", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindAuthentication)
-		writeInt32(&buf, 22)
 		writeInt32(&buf, 10)
 		writeString(&buf, "one")
 		writeString(&buf, "two")
 		writeString(&buf, "three")
 
+		var m Message
+		m.kind = KindAuthentication
+		m.body = buf.Bytes()
+
 		var result AuthenticationSASL
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 
@@ -255,14 +283,16 @@ func TestParseMessage(t *testing.T) {
 	t.Run("AuthenticationSASLContinue", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindAuthentication)
-		writeInt32(&buf, 13)
 		writeInt32(&buf, 11)
 		writeBytes(&buf, []byte("hello"))
 
+		var m Message
+		m.kind = KindAuthentication
+		m.body = buf.Bytes()
+
 		var result AuthenticationSASLContinue
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 
@@ -272,14 +302,16 @@ func TestParseMessage(t *testing.T) {
 	t.Run("AuthenticationSASLFinal", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindAuthentication)
-		writeInt32(&buf, 13)
 		writeInt32(&buf, 12)
 		writeBytes(&buf, []byte("hello"))
 
+		var m Message
+		m.kind = KindAuthentication
+		m.body = buf.Bytes()
+
 		var result AuthenticationSASLFinal
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 
@@ -289,14 +321,16 @@ func TestParseMessage(t *testing.T) {
 	t.Run("BackendKeyData", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindKeyData)
-		writeInt32(&buf, 13)
 		writeInt32(&buf, 111)
 		writeBytes(&buf, []byte("hello"))
 
+		var m Message
+		m.kind = KindKeyData
+		m.body = buf.Bytes()
+
 		var result BackendKeyData
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 
@@ -305,27 +339,25 @@ func TestParseMessage(t *testing.T) {
 	})
 
 	t.Run("BindComplete", func(t *testing.T) {
-		var buf bytes.Buffer
-
-		writeKind(&buf, KindBindComplete)
-		writeInt32(&buf, 4)
+		var m Message
+		m.kind = KindBindComplete
+		m.body = []byte{}
 
 		var result BindComplete
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 	})
 
 	t.Run("CloseComplete", func(t *testing.T) {
-		var buf bytes.Buffer
-
-		writeKind(&buf, KindCloseComplete)
-		writeInt32(&buf, 4)
+		var m Message
+		m.kind = KindCloseComplete
+		m.body = []byte{}
 
 		var result CloseComplete
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 	})
@@ -333,13 +365,15 @@ func TestParseMessage(t *testing.T) {
 	t.Run("CommandComplete", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindCommandComplete)
-		writeInt32(&buf, 16)
 		writeString(&buf, "INSERT 11 11")
+
+		var m Message
+		m.kind = KindCommandComplete
+		m.body = buf.Bytes()
 
 		var result CommandComplete
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 
@@ -349,13 +383,15 @@ func TestParseMessage(t *testing.T) {
 	t.Run("CopyData", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindCopyData)
-		writeInt32(&buf, 9)
 		writeBytes(&buf, []byte("hello"))
+
+		var m Message
+		m.kind = KindCopyData
+		m.body = buf.Bytes()
 
 		var result CopyData
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 
@@ -363,14 +399,13 @@ func TestParseMessage(t *testing.T) {
 	})
 
 	t.Run("CopyDone", func(t *testing.T) {
-		var buf bytes.Buffer
-
-		writeKind(&buf, KindCopyDone)
-		writeInt32(&buf, 4)
+		var m Message
+		m.kind = KindCopyDone
+		m.body = []byte{}
 
 		var result CopyDone
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 	})
@@ -378,16 +413,18 @@ func TestParseMessage(t *testing.T) {
 	t.Run("CopyInResponse", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindCopyInResponse)
-		writeInt32(&buf, 11)
 		writeInt8(&buf, 1)
 		writeInt16(&buf, 2)
 		writeInt16(&buf, int16(FormatBinary))
 		writeInt16(&buf, int16(FormatBinary))
 
+		var m Message
+		m.kind = KindCopyInResponse
+		m.body = buf.Bytes()
+
 		var result CopyInResponse
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 
@@ -398,16 +435,18 @@ func TestParseMessage(t *testing.T) {
 	t.Run("CopyOutResponse", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindCopyOutResponse)
-		writeInt32(&buf, 11)
 		writeInt8(&buf, 1)
 		writeInt16(&buf, 2)
 		writeInt16(&buf, int16(FormatBinary))
 		writeInt16(&buf, int16(FormatBinary))
 
+		var m Message
+		m.kind = KindCopyOutResponse
+		m.body = buf.Bytes()
+
 		var result CopyOutResponse
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 
@@ -418,16 +457,18 @@ func TestParseMessage(t *testing.T) {
 	t.Run("CopyBothResponse", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindCopyBothResponse)
-		writeInt32(&buf, 11)
 		writeInt8(&buf, 1)
 		writeInt16(&buf, 2)
 		writeInt16(&buf, int16(FormatBinary))
 		writeInt16(&buf, int16(FormatBinary))
 
+		var m Message
+		m.kind = KindCopyBothResponse
+		m.body = buf.Bytes()
+
 		var result CopyBothResponse
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 
@@ -438,8 +479,6 @@ func TestParseMessage(t *testing.T) {
 	t.Run("DataRow", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeKind(&buf, KindDataRow)
-		writeInt32(&buf, 32)
 		writeInt16(&buf, 4)
 		writeInt32(&buf, 5)
 		writeBytes(&buf, []byte("hello"))
@@ -448,9 +487,13 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 5)
 		writeBytes(&buf, []byte("world"))
 
+		var m Message
+		m.kind = KindDataRow
+		m.body = buf.Bytes()
+
 		var result DataRow
 
-		ok, err := as(&buf, &result)
+		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
 
@@ -461,4 +504,38 @@ func TestParseMessage(t *testing.T) {
 			[]byte("world"),
 		}, result.Columns)
 	})
+
+	t.Run("EmptyQueryResponse", func(t *testing.T) {
+		var m Message
+		m.kind = KindEmptyQueryResponse
+		m.body = []byte{}
+
+		var result EmptyQueryResponse
+
+		ok, err := as(m, &result)
+		require.NoError(t, err)
+		require.True(t, ok)
+	})
+
+	/*
+		t.Run("ErrorResponse", func(t *testing.T) {
+			var buf bytes.Buffer
+
+			writeField(&buf, FieldSeverity)
+			writeString(&buf, "ERROR")
+			writeField(&buf, FieldMessage)
+			writeString(&buf, "hello world")
+			writeInt8(&buf, 0)
+
+			var m Message
+			m.kind = KindErrorResponse
+			m.body = buf.Bytes()
+
+			var result ErrorResponse
+
+			ok, err := as(m, &result)
+			require.NoError(t, err)
+			require.True(t, ok)
+		})
+	*/
 }
