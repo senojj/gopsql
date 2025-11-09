@@ -439,11 +439,14 @@ func TestParseMessage(t *testing.T) {
 		var buf bytes.Buffer
 
 		writeKind(&buf, KindDataRow)
-		writeInt32(&buf, 19)
-		writeInt16(&buf, 2)
+		writeInt32(&buf, 32)
+		writeInt16(&buf, 4)
 		writeInt32(&buf, 5)
 		writeBytes(&buf, []byte("hello"))
 		writeInt32(&buf, -1)
+		writeInt32(&buf, 0)
+		writeInt32(&buf, 5)
+		writeBytes(&buf, []byte("world"))
 
 		var result DataRow
 
@@ -451,6 +454,11 @@ func TestParseMessage(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, ok)
 
-		require.Equal(t, [][]byte{[]byte("hello"), []byte(nil)}, result.Columns)
+		require.Equal(t, [][]byte{
+			[]byte("hello"),
+			[]byte(nil),
+			[]byte{},
+			[]byte("world"),
+		}, result.Columns)
 	})
 }
