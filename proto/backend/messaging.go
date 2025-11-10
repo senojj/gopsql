@@ -10,6 +10,7 @@ import (
 var (
 	ErrShortRead     = errors.New("short read")
 	ErrValueOverflow = errors.New("value too large")
+	ErrInvalidValue  = errors.New("invalid value")
 )
 
 type Kind byte
@@ -63,6 +64,35 @@ const (
 	FieldLine             Field = 'L'
 	FieldRoutine          Field = 'R'
 )
+
+func ParseField(b byte) (Field, error) {
+	var err error
+	v := Field(b)
+
+	switch v {
+	case FieldSeverity:
+	case FieldSeverityRaw:
+	case FieldCode:
+	case FieldMessage:
+	case FieldDetail:
+	case FieldHint:
+	case FieldPosition:
+	case FieldInternalPosition:
+	case FieldInternalQuery:
+	case FieldWhere:
+	case FieldSchema:
+	case FieldTable:
+	case FieldColumn:
+	case FieldDataType:
+	case FieldConstraint:
+	case FieldFile:
+	case FieldLine:
+	case FieldRoutine:
+	default:
+		err = ErrInvalidValue
+	}
+	return v, err
+}
 
 type Format int16
 
@@ -324,6 +354,24 @@ type ErrorResponse struct {
 	Values []string
 }
 
+func (e *ErrorResponse) Unmarshal(b []byte) error {
+	var f byte
+
+	f, b = readByte(b)
+	for f != 0 {
+		field, err := ParseField(f)
+		if err != nil {
+			return err
+		}
+		e.Fields = append(e.Fields, Field(field))
+		var value string
+		value, b = readString(b)
+		e.Values = append(e.Values, value)
+		f, b = readByte(b)
+	}
+	return nil
+}
+
 type FunctionCallResponse struct {
 	// Can be zero length or nil.
 	Result []byte
@@ -529,9 +577,22 @@ func (m *Message) Parse() (any, error) {
 		var e EmptyQueryResponse
 		err := e.Unmarshal(m.body)
 		return e, err
+	case KindErrorResponse:
+		var e ErrorResponse
+		err := e.Unmarshal(m.body)
+		return e, err
 	default:
 		return Unknown{}, nil
 	}
+}
+
+func readByte(b []byte) (byte, []byte) {
+	var v byte
+	if len(b) > 0 {
+		v = b[0]
+		return v, b[1:]
+	}
+	return v, nil
 }
 
 func readInt8(b []byte) (int8, []byte) {

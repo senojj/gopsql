@@ -8,6 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func writeField(buf *bytes.Buffer, f Field) {
+	buf.WriteByte(byte(f))
+}
+
 func writeKind(buf *bytes.Buffer, k Kind) {
 	buf.WriteByte(byte(k))
 }
@@ -517,25 +521,26 @@ func TestParseMessage(t *testing.T) {
 		require.True(t, ok)
 	})
 
-	/*
-		t.Run("ErrorResponse", func(t *testing.T) {
-			var buf bytes.Buffer
+	t.Run("ErrorResponse", func(t *testing.T) {
+		var buf bytes.Buffer
 
-			writeField(&buf, FieldSeverity)
-			writeString(&buf, "ERROR")
-			writeField(&buf, FieldMessage)
-			writeString(&buf, "hello world")
-			writeInt8(&buf, 0)
+		writeField(&buf, FieldSeverity)
+		writeString(&buf, "ERROR")
+		writeField(&buf, FieldMessage)
+		writeString(&buf, "hello world")
+		writeInt8(&buf, 0)
 
-			var m Message
-			m.kind = KindErrorResponse
-			m.body = buf.Bytes()
+		var m Message
+		m.kind = KindErrorResponse
+		m.body = buf.Bytes()
 
-			var result ErrorResponse
+		var result ErrorResponse
 
-			ok, err := as(m, &result)
-			require.NoError(t, err)
-			require.True(t, ok)
-		})
-	*/
+		ok, err := as(m, &result)
+		require.NoError(t, err)
+		require.True(t, ok)
+
+		require.Equal(t, []Field{FieldSeverity, FieldMessage}, result.Fields)
+		require.Equal(t, []string{"ERROR", "hello world"}, result.Values)
+	})
 }
