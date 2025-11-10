@@ -527,7 +527,7 @@ func (m *Message) Parse() (any, error) {
 		return d, err
 	case KindEmptyQueryResponse:
 		var e EmptyQueryResponse
-		err := c.Unmarshal(m.body)
+		err := e.Unmarshal(m.body)
 		return e, err
 	default:
 		return Unknown{}, nil
