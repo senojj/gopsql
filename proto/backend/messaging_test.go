@@ -603,4 +603,16 @@ func TestParseMessage(t *testing.T) {
 		require.Equal(t, int32(111), result.MinorVersionSupported)
 		require.Equal(t, []string{"hello", "world"}, result.UnrecognizedOptions)
 	})
+
+	t.Run("NoData", func(t *testing.T) {
+		var m Message
+		m.kind = KindNoData
+		m.body = []byte{}
+
+		var result NoData
+
+		ok, err := as(m, &result)
+		require.NoError(t, err)
+		require.True(t, ok)
+	})
 }

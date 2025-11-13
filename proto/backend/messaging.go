@@ -708,6 +708,10 @@ func (m *Message) Parse() (any, error) {
 		var n NegotiateProtocolVersion
 		err := n.Unmarshal(m.body)
 		return n, err
+	case KindNoData:
+		var n NoData
+		err := n.Unmarshal(m.body)
+		return n, err
 	default:
 		return Unknown{}, nil
 	}
