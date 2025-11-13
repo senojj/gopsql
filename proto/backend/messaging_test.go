@@ -61,29 +61,38 @@ func TestReadInt8(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		b := []byte{}
 
-		first, b := readInt8(b)
-		require.Equal(t, int8(0), first)
-		require.Equal(t, []byte(nil), b)
+		var first int8
+		bread, err := readInt8(b, &first)
+		require.ErrorIs(t, err, ErrShortRead)
+		require.Equal(t, 0, bread)
 	})
 
 	t.Run("one", func(t *testing.T) {
 		b := []byte{byte(1)}
 
-		first, b := readInt8(b)
+		var first int8
+		bread, err := readInt8(b, &first)
+		require.NoError(t, err)
+		require.Equal(t, 1, bread)
 		require.Equal(t, int8(1), first)
-		require.Equal(t, []byte{}, b)
 	})
 
 	t.Run("two", func(t *testing.T) {
 		b := []byte{byte(1), byte(2)}
 
-		first, b := readInt8(b)
+		var first int8
+		bread, err := readInt8(b, &first)
+		require.NoError(t, err)
+		require.Equal(t, 1, bread)
 		require.Equal(t, int8(1), first)
-		require.Equal(t, []byte{byte(2)}, b)
 
-		second, b := readInt8(b)
+		b = b[bread:]
+
+		var second int8
+		bread, err = readInt8(b, &second)
+		require.NoError(t, err)
+		require.Equal(t, 1, bread)
 		require.Equal(t, int8(2), second)
-		require.Equal(t, []byte{}, b)
 	})
 }
 
@@ -91,37 +100,47 @@ func TestReadString(t *testing.T) {
 	t.Run("iterative", func(t *testing.T) {
 		b := []byte{'a', 'b', 'c', '\x00', 'd', 'e', 'f', '\x00', 'g', 'h', 'i'}
 
-		first, b := readString(b)
+		var first string
+		bread, err := readString(b, &first)
+		require.NoError(t, err)
+		require.Equal(t, 4, bread)
 		require.Equal(t, "abc", first)
-		require.Equal(t, []byte{'d', 'e', 'f', '\x00', 'g', 'h', 'i'}, b)
 
-		second, b := readString(b)
+		b = b[bread:]
+
+		var second string
+		bread, err = readString(b, &second)
+		require.NoError(t, err)
+		require.Equal(t, 4, bread)
 		require.Equal(t, "def", second)
-		require.Equal(t, []byte{'g', 'h', 'i'}, b)
 
-		third, b := readString(b)
-		require.Equal(t, "ghi", third)
-		require.Equal(t, []byte(nil), b)
+		b = b[bread:]
 
-		fourth, b := readString(b)
-		require.Equal(t, "", fourth)
-		require.Equal(t, []byte(nil), b)
+		var third string
+		bread, err = readString(b, &third)
+		require.ErrorIs(t, err, ErrShortRead)
+		require.Equal(t, 0, bread)
+		require.Equal(t, "", third)
 	})
 
 	t.Run("last_character_null", func(t *testing.T) {
 		b := []byte{'a', 'b', 'c', '\x00'}
 
-		first, b := readString(b)
+		var first string
+		bread, err := readString(b, &first)
+		require.NoError(t, err)
+		require.Equal(t, 4, bread)
 		require.Equal(t, "abc", first)
-		require.Equal(t, []byte{}, b)
 	})
 
 	t.Run("only_character_null", func(t *testing.T) {
 		b := []byte{'\x00'}
 
-		first, b := readString(b)
+		var first string
+		bread, err := readString(b, &first)
+		require.NoError(t, err)
+		require.Equal(t, 1, bread)
 		require.Equal(t, "", first)
-		require.Equal(t, []byte{}, b)
 	})
 }
 
@@ -561,5 +580,27 @@ func TestParseMessage(t *testing.T) {
 		require.True(t, ok)
 
 		require.Equal(t, []byte("hello world"), result.Result)
+	})
+
+	t.Run("NegotiateProtocolVersion", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		writeInt32(&buf, 111)      // newest supported minor version
+		writeInt32(&buf, 2)        // number of unrecognized protocols
+		writeString(&buf, "hello") // first unrecognized protocol
+		writeString(&buf, "world") // second unrecognized protocol
+
+		var m Message
+		m.kind = KindNegotiateProtocolVersion
+		m.body = buf.Bytes()
+
+		var result NegotiateProtocolVersion
+
+		ok, err := as(m, &result)
+		require.NoError(t, err)
+		require.True(t, ok)
+
+		require.Equal(t, int32(111), result.MinorVersionSupported)
+		require.Equal(t, []string{"hello", "world"}, result.UnrecognizedOptions)
 	})
 }

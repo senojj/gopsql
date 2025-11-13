@@ -165,7 +165,11 @@ type AuthenticationSASL struct {
 func (a *AuthenticationSASL) Unmarshal(b []byte) error {
 	for len(b) > 1 {
 		var mechanism string
-		mechanism, b = readString(b)
+		bread, err := readString(b, &mechanism)
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
 		a.Mechanisms = append(a.Mechanisms, mechanism)
 	}
 	return nil
@@ -200,11 +204,16 @@ func (k *BackendKeyData) Unmarshal(b []byte) error {
 	if len(b) < 4 {
 		return ErrShortRead
 	}
-	processID, b := readInt32(b)
-	k.ProcessID = processID
+	bread, err := readInt32(b, &k.ProcessID)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+
 	if len(b) < 4 {
 		return ErrShortRead
 	}
+
 	if len(b) > 256 {
 		return ErrValueOverflow
 	}
@@ -226,9 +235,8 @@ type CommandComplete struct {
 }
 
 func (c *CommandComplete) Unmarshal(b []byte) error {
-	tag, _ := readString(b)
-	c.Tag = tag
-	return nil
+	_, err := readString(b, &c.Tag)
+	return err
 }
 
 type CopyData struct {
@@ -251,19 +259,33 @@ type CopyInResponse struct {
 }
 
 func (c *CopyInResponse) Unmarshal(b []byte) error {
-	format, b := readInt8(b)
-	if len(b) < 2 {
-		return ErrShortRead
+	var format int8
+	bread, err := readInt8(b, &format)
+	if err != nil {
+		return err
 	}
-	columns, b := readInt16(b)
+	b = b[bread:]
+
+	var columns int16
+	bread, err = readInt16(b, &columns)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+
 	if len(b) < int(columns)*2 {
 		return ErrShortRead
 	}
+
 	c.Format = Format(format)
 	c.Columns = make([]Format, int(columns))
 	for i := range len(c.Columns) {
 		var format int16
-		format, b = readInt16(b)
+		bread, err = readInt16(b, &format)
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
 		c.Columns[i] = Format(format)
 	}
 	return nil
@@ -275,19 +297,33 @@ type CopyOutResponse struct {
 }
 
 func (c *CopyOutResponse) Unmarshal(b []byte) error {
-	format, b := readInt8(b)
-	if len(b) < 2 {
-		return ErrShortRead
+	var format int8
+	bread, err := readInt8(b, &format)
+	if err != nil {
+		return err
 	}
-	columns, b := readInt16(b)
+	b = b[bread:]
+
+	var columns int16
+	bread, err = readInt16(b, &columns)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+
 	if len(b) < int(columns)*2 {
 		return ErrShortRead
 	}
+
 	c.Format = Format(format)
 	c.Columns = make([]Format, int(columns))
 	for i := range len(c.Columns) {
 		var format int16
-		format, b = readInt16(b)
+		bread, err = readInt16(b, &format)
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
 		c.Columns[i] = Format(format)
 	}
 	return nil
@@ -299,19 +335,33 @@ type CopyBothResponse struct {
 }
 
 func (c *CopyBothResponse) Unmarshal(b []byte) error {
-	format, b := readInt8(b)
-	if len(b) < 2 {
-		return ErrShortRead
+	var format int8
+	bread, err := readInt8(b, &format)
+	if err != nil {
+		return err
 	}
-	columns, b := readInt16(b)
+	b = b[bread:]
+
+	var columns int16
+	bread, err = readInt16(b, &columns)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+
 	if len(b) < int(columns)*2 {
 		return ErrShortRead
 	}
+
 	c.Format = Format(format)
 	c.Columns = make([]Format, int(columns))
 	for i := range len(c.Columns) {
 		var format int16
-		format, b = readInt16(b)
+		bread, err = readInt16(b, &format)
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
 		c.Columns[i] = Format(format)
 	}
 	return nil
@@ -325,15 +375,22 @@ type DataRow struct {
 }
 
 func (d *DataRow) Unmarshal(b []byte) error {
-	columns, b := readInt16(b)
+	var columns int16
+	bread, err := readInt16(b, &columns)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
 	d.Columns = make([][]byte, columns)
 
 	for i := range columns {
-		if len(b) < 4 {
-			return ErrShortRead
-		}
 		var length int32
-		length, b = readInt32(b)
+		bread, err = readInt32(b, &length)
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
+
 		if length == -1 {
 			d.Columns[i] = nil
 			continue
@@ -356,8 +413,12 @@ type ErrorResponse struct {
 
 func (e *ErrorResponse) Unmarshal(b []byte) error {
 	var f byte
+	bread, err := readByte(b, &f)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
 
-	f, b = readByte(b)
 	for f != 0 {
 		field, err := ParseField(f)
 		if err != nil {
@@ -365,9 +426,17 @@ func (e *ErrorResponse) Unmarshal(b []byte) error {
 		}
 		e.Fields = append(e.Fields, Field(field))
 		var value string
-		value, b = readString(b)
+		bread, err = readString(b, &value)
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
 		e.Values = append(e.Values, value)
-		f, b = readByte(b)
+		bread, err = readByte(b, &f)
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
 	}
 	return nil
 }
@@ -379,8 +448,12 @@ type FunctionCallResponse struct {
 
 func (f *FunctionCallResponse) Unmarshal(b []byte) error {
 	var length int32
+	bread, err := readInt32(b, &length)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
 
-	length, b = readInt32(b)
 	if length >= 0 {
 		f.Result = make([]byte, length)
 		copy(f.Result, b[:length])
@@ -392,6 +465,34 @@ func (f *FunctionCallResponse) Unmarshal(b []byte) error {
 type NegotiateProtocolVersion struct {
 	MinorVersionSupported int32
 	UnrecognizedOptions   []string
+}
+
+func (n *NegotiateProtocolVersion) Unmarshal(b []byte) error {
+	bread, err := readInt32(b, &n.MinorVersionSupported)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+
+	var numUnrecognized int32
+	bread, err = readInt32(b, &numUnrecognized)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+
+	n.UnrecognizedOptions = make([]string, numUnrecognized)
+
+	for i := range numUnrecognized {
+		var protocol string
+		bread, err = readString(b, &protocol)
+		if err != nil {
+			return nil
+		}
+		b = b[bread:]
+		n.UnrecognizedOptions[i] = protocol
+	}
+	return nil
 }
 
 type NoData struct {
@@ -498,7 +599,13 @@ func (m *Message) Unmarshal(r io.Reader) error {
 func (m *Message) Parse() (any, error) {
 	switch m.kind {
 	case KindAuthentication:
-		s, b := readInt32(m.body)
+		var s int32
+		bread, err := readInt32(m.body, &s)
+		if err != nil {
+			return nil, err
+		}
+		b := m.body[bread:]
+
 		switch s {
 		case 0:
 			var a AuthenticationOk
@@ -597,51 +704,54 @@ func (m *Message) Parse() (any, error) {
 		var f FunctionCallResponse
 		err := f.Unmarshal(m.body)
 		return f, err
+	case KindNegotiateProtocolVersion:
+		var n NegotiateProtocolVersion
+		err := n.Unmarshal(m.body)
+		return n, err
 	default:
 		return Unknown{}, nil
 	}
 }
 
-func readByte(b []byte) (byte, []byte) {
+func readByte(b []byte, v *byte) (int, error) {
+	if len(b) < 1 {
+		return 0, ErrShortRead
+	}
+	*v = b[0]
+	return 1, nil
+}
+
+func readInt8(b []byte, i *int8) (int, error) {
 	var v byte
-	if len(b) > 0 {
-		v = b[0]
-		return v, b[1:]
+	bread, err := readByte(b, &v)
+	if err != nil {
+		return bread, err
 	}
-	return v, nil
+	*i = int8(v)
+	return bread, nil
 }
 
-func readInt8(b []byte) (int8, []byte) {
-	var v int8
-	if len(b) > 0 {
-		v = int8(b[0])
-		return v, b[1:]
+func readInt16(b []byte, i *int16) (int, error) {
+	if len(b) < 2 {
+		return 0, ErrShortRead
 	}
-	return v, nil
+	*i = int16(binary.BigEndian.Uint16(b[:2]))
+	return 2, nil
 }
 
-func readInt16(b []byte) (int16, []byte) {
-	var v int16
-	if len(b) > 1 {
-		v = int16(binary.BigEndian.Uint16(b[:2]))
-		return v, b[2:]
+func readInt32(b []byte, i *int32) (int, error) {
+	if len(b) < 4 {
+		return 0, ErrShortRead
 	}
-	return v, nil
+	*i = int32(binary.BigEndian.Uint32(b[:4]))
+	return 4, nil
 }
 
-func readInt32(b []byte) (int32, []byte) {
-	var v int32
-	if len(b) > 3 {
-		v = int32(binary.BigEndian.Uint32(b[:4]))
-		return v, b[4:]
-	}
-	return v, nil
-}
-
-func readString(b []byte) (string, []byte) {
+func readString(b []byte, s *string) (int, error) {
 	ndx := bytes.IndexByte(b, 0)
 	if ndx > -1 {
-		return string(b[:ndx]), b[ndx+1:]
+		*s = string(b[:ndx])
+		return ndx + 1, nil
 	}
-	return string(b), nil
+	return 0, ErrShortRead
 }
