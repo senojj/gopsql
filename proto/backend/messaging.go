@@ -504,6 +504,36 @@ type NoticeResponse struct {
 	Values []string
 }
 
+func (n *NoticeResponse) Unmarshal(b []byte) error {
+	var f byte
+	bread, err := readByte(b, &f)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+
+	for f != 0 {
+		field, err := ParseField(f)
+		if err != nil {
+			return err
+		}
+		n.Fields = append(n.Fields, Field(field))
+		var value string
+		bread, err = readString(b, &value)
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
+		n.Values = append(n.Values, value)
+		bread, err = readByte(b, &f)
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
+	}
+	return nil
+}
+
 type NotificationResponse struct {
 	ProcessID int32
 	Channel   string
@@ -710,6 +740,10 @@ func (m *Message) Parse() (any, error) {
 		return n, err
 	case KindNoData:
 		var n NoData
+		err := n.Unmarshal(m.body)
+		return n, err
+	case KindNoticeResponse:
+		var n NoticeResponse
 		err := n.Unmarshal(m.body)
 		return n, err
 	default:

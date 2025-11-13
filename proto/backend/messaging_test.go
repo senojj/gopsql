@@ -615,4 +615,27 @@ func TestParseMessage(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, ok)
 	})
+
+	t.Run("NoticeResponse", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		writeField(&buf, FieldSeverity)
+		writeString(&buf, "WARNING")
+		writeField(&buf, FieldMessage)
+		writeString(&buf, "hello world")
+		writeInt8(&buf, 0)
+
+		var m Message
+		m.kind = KindNoticeResponse
+		m.body = buf.Bytes()
+
+		var result NoticeResponse
+
+		ok, err := as(m, &result)
+		require.NoError(t, err)
+		require.True(t, ok)
+
+		require.Equal(t, []Field{FieldSeverity, FieldMessage}, result.Fields)
+		require.Equal(t, []string{"WARNING", "hello world"}, result.Values)
+	})
 }
