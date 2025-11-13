@@ -543,4 +543,23 @@ func TestParseMessage(t *testing.T) {
 		require.Equal(t, []Field{FieldSeverity, FieldMessage}, result.Fields)
 		require.Equal(t, []string{"ERROR", "hello world"}, result.Values)
 	})
+
+	t.Run("FunctionCallResponse", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		writeInt32(&buf, 11)                    // length of function response data
+		writeBytes(&buf, []byte("hello world")) // function response data
+
+		var m Message
+		m.kind = KindFunctionCallResponse
+		m.body = buf.Bytes()
+
+		var result FunctionCallResponse
+
+		ok, err := as(m, &result)
+		require.NoError(t, err)
+		require.True(t, ok)
+
+		require.Equal(t, []byte("hello world"), result.Result)
+	})
 }

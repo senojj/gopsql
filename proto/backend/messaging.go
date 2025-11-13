@@ -377,6 +377,18 @@ type FunctionCallResponse struct {
 	Result []byte
 }
 
+func (f *FunctionCallResponse) Unmarshal(b []byte) error {
+	var length int32
+
+	length, b = readInt32(b)
+	if length >= 0 {
+		f.Result = make([]byte, length)
+		copy(f.Result, b[:length])
+	}
+	// f.Result remains nil when length < 0
+	return nil
+}
+
 type NegotiateProtocolVersion struct {
 	MinorVersionSupported int32
 	UnrecognizedOptions   []string
@@ -581,6 +593,10 @@ func (m *Message) Parse() (any, error) {
 		var e ErrorResponse
 		err := e.Unmarshal(m.body)
 		return e, err
+	case KindFunctionCallResponse:
+		var f FunctionCallResponse
+		err := f.Unmarshal(m.body)
+		return f, err
 	default:
 		return Unknown{}, nil
 	}
