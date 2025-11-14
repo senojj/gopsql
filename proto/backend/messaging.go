@@ -540,6 +540,26 @@ type NotificationResponse struct {
 	Payload   string
 }
 
+func (n *NotificationResponse) Unmarshal(b []byte) error {
+	bread, err := readInt32(b, &n.ProcessID)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+
+	bread, err = readString(b, &n.Channel)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+
+	bread, err = readString(b, &n.Payload)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type ParameterDescription struct {
 	Parameters []int32
 }
@@ -744,6 +764,10 @@ func (m *Message) Parse() (any, error) {
 		return n, err
 	case KindNoticeResponse:
 		var n NoticeResponse
+		err := n.Unmarshal(m.body)
+		return n, err
+	case KindNotificationResponse:
+		var n NotificationResponse
 		err := n.Unmarshal(m.body)
 		return n, err
 	default:
