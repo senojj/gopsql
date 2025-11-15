@@ -109,60 +109,76 @@ const (
 	TxStatusError  TxStatus = 'E'
 )
 
-type Unmarshaler interface {
-	Unmarshal([]byte) error
-}
+type AuthenticationOk struct{}
 
-type noop struct{}
+type xAuthenticationOk AuthenticationOk
 
-func (n *noop) Unmarshal(b []byte) error {
+func (x *xAuthenticationOk) Unmarshal(_ []byte) error {
 	return nil
 }
 
-type AuthenticationOk struct {
-	noop
+type AuthenticationKerberosV5 struct{}
+
+type xAuthenticationKerberosV5 AuthenticationKerberosV5
+
+func (x *xAuthenticationKerberosV5) Unmarshal(_ []byte) error {
+	return nil
 }
 
-type AuthenticationKerberosV5 struct {
-	noop
-}
+type AuthenticationCleartextPassword struct{}
 
-type AuthenticationCleartextPassword struct {
-	noop
+type xAuthenticationCleartextPassword AuthenticationCleartextPassword
+
+func (x *xAuthenticationCleartextPassword) Unmarshal(_ []byte) error {
+	return nil
 }
 
 type AuthenticationMD5Password struct {
 	Salt [4]byte
 }
 
-func (a *AuthenticationMD5Password) Unmarshal(b []byte) error {
-	copy(a.Salt[:], b)
+type xAuthenticationMD5Password AuthenticationMD5Password
+
+func (x *xAuthenticationMD5Password) Unmarshal(b []byte) error {
+	copy(x.Salt[:], b)
 	return nil
 }
 
-type AuthenticationGSS struct {
-	noop
+type AuthenticationGSS struct{}
+
+type xAuthenticationGSS AuthenticationGSS
+
+func (x *xAuthenticationGSS) Unmarshal(_ []byte) error {
+	return nil
 }
 
 type AuthenticationGSSContinue struct {
 	Data []byte
 }
 
-func (a *AuthenticationGSSContinue) Unmarshal(b []byte) error {
-	a.Data = make([]byte, len(b))
-	copy(a.Data, b)
+type xAuthenticationGSSContinue AuthenticationGSSContinue
+
+func (x *xAuthenticationGSSContinue) Unmarshal(b []byte) error {
+	x.Data = make([]byte, len(b))
+	copy(x.Data, b)
 	return nil
 }
 
-type AuthenticationSSPI struct {
-	noop
+type AuthenticationSSPI struct{}
+
+type xAuthenticationSSPI AuthenticationSSPI
+
+func (x *xAuthenticationSSPI) Unmarshal(_ []byte) error {
+	return nil
 }
 
 type AuthenticationSASL struct {
 	Mechanisms []string
 }
 
-func (a *AuthenticationSASL) Unmarshal(b []byte) error {
+type xAuthenticationSASL AuthenticationSASL
+
+func (x *xAuthenticationSASL) Unmarshal(b []byte) error {
 	for len(b) > 1 {
 		var mechanism string
 		bread, err := readString(b, &mechanism)
@@ -170,7 +186,7 @@ func (a *AuthenticationSASL) Unmarshal(b []byte) error {
 			return err
 		}
 		b = b[bread:]
-		a.Mechanisms = append(a.Mechanisms, mechanism)
+		x.Mechanisms = append(x.Mechanisms, mechanism)
 	}
 	return nil
 }
@@ -179,9 +195,11 @@ type AuthenticationSASLContinue struct {
 	Data []byte
 }
 
-func (a *AuthenticationSASLContinue) Unmarshal(b []byte) error {
-	a.Data = make([]byte, len(b))
-	copy(a.Data, b)
+type xAuthenticationSASLContinue AuthenticationSASLContinue
+
+func (x *xAuthenticationSASLContinue) Unmarshal(b []byte) error {
+	x.Data = make([]byte, len(b))
+	copy(x.Data, b)
 	return nil
 }
 
@@ -189,9 +207,11 @@ type AuthenticationSASLFinal struct {
 	Data []byte
 }
 
-func (a *AuthenticationSASLFinal) Unmarshal(b []byte) error {
-	a.Data = make([]byte, len(b))
-	copy(a.Data, b)
+type xAuthenticationSASLFinal AuthenticationSASLFinal
+
+func (x *xAuthenticationSASLFinal) Unmarshal(b []byte) error {
+	x.Data = make([]byte, len(b))
+	copy(x.Data, b)
 	return nil
 }
 
@@ -200,11 +220,13 @@ type BackendKeyData struct {
 	SecretKey []byte
 }
 
-func (k *BackendKeyData) Unmarshal(b []byte) error {
+type xBackendKeyData BackendKeyData
+
+func (x *xBackendKeyData) Unmarshal(b []byte) error {
 	if len(b) < 4 {
 		return ErrShortRead
 	}
-	bread, err := readInt32(b, &k.ProcessID)
+	bread, err := readInt32(b, &x.ProcessID)
 	if err != nil {
 		return err
 	}
@@ -217,25 +239,35 @@ func (k *BackendKeyData) Unmarshal(b []byte) error {
 	if len(b) > 256 {
 		return ErrValueOverflow
 	}
-	k.SecretKey = make([]byte, len(b))
-	copy(k.SecretKey, b)
+	x.SecretKey = make([]byte, len(b))
+	copy(x.SecretKey, b)
 	return nil
 }
 
-type BindComplete struct {
-	noop
+type BindComplete struct{}
+
+type xBindComplete BindComplete
+
+func (x *xBindComplete) Unmarshal(_ []byte) error {
+	return nil
 }
 
-type CloseComplete struct {
-	noop
+type CloseComplete struct{}
+
+type xCloseComplete CloseComplete
+
+func (x *xCloseComplete) Unmarshal(_ []byte) error {
+	return nil
 }
 
 type CommandComplete struct {
 	Tag string
 }
 
-func (c *CommandComplete) Unmarshal(b []byte) error {
-	_, err := readString(b, &c.Tag)
+type xCommandComplete CommandComplete
+
+func (x *xCommandComplete) Unmarshal(b []byte) error {
+	_, err := readString(b, &x.Tag)
 	return err
 }
 
@@ -243,14 +275,20 @@ type CopyData struct {
 	Data []byte
 }
 
-func (c *CopyData) Unmarshal(b []byte) error {
-	c.Data = make([]byte, len(b))
-	copy(c.Data, b)
+type xCopyData CopyData
+
+func (x *xCopyData) Unmarshal(b []byte) error {
+	x.Data = make([]byte, len(b))
+	copy(x.Data, b)
 	return nil
 }
 
-type CopyDone struct {
-	noop
+type CopyDone struct{}
+
+type xCopyDone CopyDone
+
+func (x *xCopyDone) Unmarshal(_ []byte) error {
+	return nil
 }
 
 type CopyInResponse struct {
@@ -258,7 +296,9 @@ type CopyInResponse struct {
 	Columns []Format
 }
 
-func (c *CopyInResponse) Unmarshal(b []byte) error {
+type xCopyInResponse CopyInResponse
+
+func (x *xCopyInResponse) Unmarshal(b []byte) error {
 	var format int8
 	bread, err := readInt8(b, &format)
 	if err != nil {
@@ -277,16 +317,16 @@ func (c *CopyInResponse) Unmarshal(b []byte) error {
 		return ErrShortRead
 	}
 
-	c.Format = Format(format)
-	c.Columns = make([]Format, int(columns))
-	for i := range len(c.Columns) {
+	x.Format = Format(format)
+	x.Columns = make([]Format, int(columns))
+	for i := range len(x.Columns) {
 		var format int16
 		bread, err = readInt16(b, &format)
 		if err != nil {
 			return err
 		}
 		b = b[bread:]
-		c.Columns[i] = Format(format)
+		x.Columns[i] = Format(format)
 	}
 	return nil
 }
@@ -296,7 +336,9 @@ type CopyOutResponse struct {
 	Columns []Format
 }
 
-func (c *CopyOutResponse) Unmarshal(b []byte) error {
+type xCopyOutResponse CopyOutResponse
+
+func (x *xCopyOutResponse) Unmarshal(b []byte) error {
 	var format int8
 	bread, err := readInt8(b, &format)
 	if err != nil {
@@ -315,16 +357,16 @@ func (c *CopyOutResponse) Unmarshal(b []byte) error {
 		return ErrShortRead
 	}
 
-	c.Format = Format(format)
-	c.Columns = make([]Format, int(columns))
-	for i := range len(c.Columns) {
+	x.Format = Format(format)
+	x.Columns = make([]Format, int(columns))
+	for i := range len(x.Columns) {
 		var format int16
 		bread, err = readInt16(b, &format)
 		if err != nil {
 			return err
 		}
 		b = b[bread:]
-		c.Columns[i] = Format(format)
+		x.Columns[i] = Format(format)
 	}
 	return nil
 }
@@ -334,7 +376,9 @@ type CopyBothResponse struct {
 	Columns []Format
 }
 
-func (c *CopyBothResponse) Unmarshal(b []byte) error {
+type xCopyBothResopnse CopyBothResponse
+
+func (x *xCopyBothResponse) Unmarshal(b []byte) error {
 	var format int8
 	bread, err := readInt8(b, &format)
 	if err != nil {
@@ -353,16 +397,16 @@ func (c *CopyBothResponse) Unmarshal(b []byte) error {
 		return ErrShortRead
 	}
 
-	c.Format = Format(format)
-	c.Columns = make([]Format, int(columns))
-	for i := range len(c.Columns) {
+	x.Format = Format(format)
+	x.Columns = make([]Format, int(columns))
+	for i := range len(x.Columns) {
 		var format int16
 		bread, err = readInt16(b, &format)
 		if err != nil {
 			return err
 		}
 		b = b[bread:]
-		c.Columns[i] = Format(format)
+		x.Columns[i] = Format(format)
 	}
 	return nil
 }
@@ -374,14 +418,16 @@ type DataRow struct {
 	Columns [][]byte
 }
 
-func (d *DataRow) Unmarshal(b []byte) error {
+type xDataRow DataRow
+
+func (x *xDataRow) Unmarshal(b []byte) error {
 	var columns int16
 	bread, err := readInt16(b, &columns)
 	if err != nil {
 		return err
 	}
 	b = b[bread:]
-	d.Columns = make([][]byte, columns)
+	x.Columns = make([][]byte, columns)
 
 	for i := range columns {
 		var length int32
@@ -392,18 +438,22 @@ func (d *DataRow) Unmarshal(b []byte) error {
 		b = b[bread:]
 
 		if length == -1 {
-			d.Columns[i] = nil
+			x.Columns[i] = nil
 			continue
 		}
-		d.Columns[i] = make([]byte, length)
-		copy(d.Columns[i], b[:length])
+		x.Columns[i] = make([]byte, length)
+		copy(x.Columns[i], b[:length])
 		b = b[length:]
 	}
 	return nil
 }
 
-type EmptyQueryResponse struct {
-	noop
+type EmptyQueryResponse struct{}
+
+type xEmptyQueryResponse EmptyQueryResponse
+
+func (x *xEmptyQueryResponse) Unmarshal(_ []byte) error {
+	return nil
 }
 
 type ErrorResponse struct {
@@ -411,7 +461,9 @@ type ErrorResponse struct {
 	Values []string
 }
 
-func (e *ErrorResponse) Unmarshal(b []byte) error {
+type xErrorResponse ErrorResponse
+
+func (x *xErrorResponse) Unmarshal(b []byte) error {
 	var f byte
 	bread, err := readByte(b, &f)
 	if err != nil {
@@ -424,14 +476,14 @@ func (e *ErrorResponse) Unmarshal(b []byte) error {
 		if err != nil {
 			return err
 		}
-		e.Fields = append(e.Fields, Field(field))
+		x.Fields = append(x.Fields, Field(field))
 		var value string
 		bread, err = readString(b, &value)
 		if err != nil {
 			return err
 		}
 		b = b[bread:]
-		e.Values = append(e.Values, value)
+		x.Values = append(x.Values, value)
 		bread, err = readByte(b, &f)
 		if err != nil {
 			return err
@@ -446,7 +498,9 @@ type FunctionCallResponse struct {
 	Result []byte
 }
 
-func (f *FunctionCallResponse) Unmarshal(b []byte) error {
+type xFunctionCallResponse FunctionCallResponse
+
+func (x *xFunctionCallResponse) Unmarshal(b []byte) error {
 	var length int32
 	bread, err := readInt32(b, &length)
 	if err != nil {
@@ -455,8 +509,8 @@ func (f *FunctionCallResponse) Unmarshal(b []byte) error {
 	b = b[bread:]
 
 	if length >= 0 {
-		f.Result = make([]byte, length)
-		copy(f.Result, b[:length])
+		x.Result = make([]byte, length)
+		copy(x.Result, b[:length])
 	}
 	// f.Result remains nil when length < 0
 	return nil
@@ -467,8 +521,10 @@ type NegotiateProtocolVersion struct {
 	UnrecognizedOptions   []string
 }
 
-func (n *NegotiateProtocolVersion) Unmarshal(b []byte) error {
-	bread, err := readInt32(b, &n.MinorVersionSupported)
+type xNegotiateProtocolVersion NegotiateProtocolVersion
+
+func (x *xNegotiateProtocolVersion) Unmarshal(b []byte) error {
+	bread, err := readInt32(b, &x.MinorVersionSupported)
 	if err != nil {
 		return err
 	}
@@ -481,7 +537,7 @@ func (n *NegotiateProtocolVersion) Unmarshal(b []byte) error {
 	}
 	b = b[bread:]
 
-	n.UnrecognizedOptions = make([]string, numUnrecognized)
+	x.UnrecognizedOptions = make([]string, numUnrecognized)
 
 	for i := range numUnrecognized {
 		var protocol string
@@ -490,13 +546,17 @@ func (n *NegotiateProtocolVersion) Unmarshal(b []byte) error {
 			return nil
 		}
 		b = b[bread:]
-		n.UnrecognizedOptions[i] = protocol
+		x.UnrecognizedOptions[i] = protocol
 	}
 	return nil
 }
 
-type NoData struct {
-	noop
+type NoData struct{}
+
+type xNoData NoData
+
+func (x *xNoData) Unmarshal(_ []byte) error {
+	return nil
 }
 
 type NoticeResponse struct {
@@ -680,21 +740,21 @@ func (m *Message) Parse() (any, error) {
 
 		switch s {
 		case 0:
-			var a AuthenticationOk
-			err := a.Unmarshal(b)
-			return a, err
+			var x xAuthenticationOk
+			err := x.Unmarshal(b)
+			return AuthenticationOk(x), err
 		case 2:
-			var a AuthenticationKerberosV5
-			err := a.Unmarshal(b)
-			return a, err
+			var x xAuthenticationKerberosV5
+			err := x.Unmarshal(b)
+			return AuthenticationKerberosV5(x), err
 		case 3:
-			var a AuthenticationCleartextPassword
-			err := a.Unmarshal(b)
-			return a, err
+			var x xAuthenticationCleartextPassword
+			err := x.Unmarshal(b)
+			return AuthenticationCleartextPassword(x), err
 		case 5:
-			var a AuthenticationMD5Password
-			err := a.Unmarshal(b)
-			return a, err
+			var x xAuthenticationMD5Password
+			err := x.Unmarshal(b)
+			return AuthenticationMD5Password(x), err
 		case 7:
 			var a AuthenticationGSS
 			err := a.Unmarshal(b)
