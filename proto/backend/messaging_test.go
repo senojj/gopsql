@@ -660,4 +660,26 @@ func TestParseMessage(t *testing.T) {
 		require.Equal(t, "hello", result.Channel)
 		require.Equal(t, "world", result.Payload)
 	})
+
+	t.Run("ParameterDescription", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		writeInt16(&buf, 2)
+		writeInt32(&buf, 1)
+		writeInt32(&buf, 2)
+
+		var m Message
+		m.kind = KindParameterDescription
+		m.body = buf.Bytes()
+
+		var result ParameterDescription
+
+		ok, err := as(m, &result)
+		require.NoError(t, err)
+		require.True(t, ok)
+
+		require.Len(t, result.Parameters, 2)
+		require.Equal(t, int32(1), result.Parameters[0])
+		require.Equal(t, int32(2), result.Parameters[1])
+	})
 }

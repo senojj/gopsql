@@ -564,6 +564,28 @@ type ParameterDescription struct {
 	Parameters []int32
 }
 
+func (p *ParameterDescription) Unmarshal(b []byte) error {
+	var length int16
+	bread, err := readInt16(b, &length)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+
+	p.Parameters = make([]int32, length)
+
+	for i := range length {
+		var param int32
+		bread, err = readInt32(b, &param)
+		if err != nil {
+			return err
+		}
+		p.Parameters[i] = param
+		b = b[bread:]
+	}
+	return nil
+}
+
 type ParametetrStatus struct {
 	Name  string
 	Value string
@@ -770,6 +792,10 @@ func (m *Message) Parse() (any, error) {
 		var n NotificationResponse
 		err := n.Unmarshal(m.body)
 		return n, err
+	case KindParameterDescription:
+		var p ParameterDescription
+		err := p.Unmarshal(m.body)
+		return p, err
 	default:
 		return Unknown{}, nil
 	}
