@@ -376,7 +376,7 @@ type CopyBothResponse struct {
 	Columns []Format
 }
 
-type xCopyBothResopnse CopyBothResponse
+type xCopyBothResponse CopyBothResponse
 
 func (x *xCopyBothResponse) Unmarshal(b []byte) error {
 	var format int8
@@ -564,7 +564,9 @@ type NoticeResponse struct {
 	Values []string
 }
 
-func (n *NoticeResponse) Unmarshal(b []byte) error {
+type xNoticeResponse NoticeResponse
+
+func (x *xNoticeResponse) Unmarshal(b []byte) error {
 	var f byte
 	bread, err := readByte(b, &f)
 	if err != nil {
@@ -577,14 +579,14 @@ func (n *NoticeResponse) Unmarshal(b []byte) error {
 		if err != nil {
 			return err
 		}
-		n.Fields = append(n.Fields, Field(field))
+		x.Fields = append(x.Fields, Field(field))
 		var value string
 		bread, err = readString(b, &value)
 		if err != nil {
 			return err
 		}
 		b = b[bread:]
-		n.Values = append(n.Values, value)
+		x.Values = append(x.Values, value)
 		bread, err = readByte(b, &f)
 		if err != nil {
 			return err
@@ -600,20 +602,22 @@ type NotificationResponse struct {
 	Payload   string
 }
 
-func (n *NotificationResponse) Unmarshal(b []byte) error {
-	bread, err := readInt32(b, &n.ProcessID)
+type xNotificationResponse NotificationResponse
+
+func (x *xNotificationResponse) Unmarshal(b []byte) error {
+	bread, err := readInt32(b, &x.ProcessID)
 	if err != nil {
 		return err
 	}
 	b = b[bread:]
 
-	bread, err = readString(b, &n.Channel)
+	bread, err = readString(b, &x.Channel)
 	if err != nil {
 		return err
 	}
 	b = b[bread:]
 
-	bread, err = readString(b, &n.Payload)
+	bread, err = readString(b, &x.Payload)
 	if err != nil {
 		return err
 	}
@@ -624,7 +628,9 @@ type ParameterDescription struct {
 	Parameters []int32
 }
 
-func (p *ParameterDescription) Unmarshal(b []byte) error {
+type xParameterDescription ParameterDescription
+
+func (x *xParameterDescription) Unmarshal(b []byte) error {
 	var length int16
 	bread, err := readInt16(b, &length)
 	if err != nil {
@@ -632,7 +638,7 @@ func (p *ParameterDescription) Unmarshal(b []byte) error {
 	}
 	b = b[bread:]
 
-	p.Parameters = make([]int32, length)
+	x.Parameters = make([]int32, length)
 
 	for i := range length {
 		var param int32
@@ -640,24 +646,20 @@ func (p *ParameterDescription) Unmarshal(b []byte) error {
 		if err != nil {
 			return err
 		}
-		p.Parameters[i] = param
+		x.Parameters[i] = param
 		b = b[bread:]
 	}
 	return nil
 }
 
-type ParametetrStatus struct {
+type ParameterStatus struct {
 	Name  string
 	Value string
 }
 
-type ParseComplete struct {
-	noop
-}
+type ParseComplete struct{}
 
-type PortalSuspended struct {
-	noop
-}
+type PortalSuspended struct{}
 
 type ReadyForQuery struct {
 	TxStatus TxStatus
@@ -673,9 +675,7 @@ type RowDescription struct {
 	Formats   []Format
 }
 
-type Unknown struct {
-	noop
-}
+type Unknown struct{}
 
 type Message struct {
 	kind Kind
@@ -756,106 +756,104 @@ func (m *Message) Parse() (any, error) {
 			err := x.Unmarshal(b)
 			return AuthenticationMD5Password(x), err
 		case 7:
-			var a AuthenticationGSS
-			err := a.Unmarshal(b)
-			return a, err
+			var x xAuthenticationGSS
+			err := x.Unmarshal(b)
+			return AuthenticationGSS(x), err
 		case 8:
-			var a AuthenticationGSSContinue
-			err := a.Unmarshal(b)
-			return a, err
+			var x xAuthenticationGSSContinue
+			err := x.Unmarshal(b)
+			return AuthenticationGSSContinue(x), err
 		case 9:
-			var a AuthenticationSSPI
-			err := a.Unmarshal(b)
-			return a, err
+			var x xAuthenticationSSPI
+			err := x.Unmarshal(b)
+			return AuthenticationSSPI(x), err
 		case 10:
-			var a AuthenticationSASL
-			err := a.Unmarshal(b)
-			return a, err
+			var x xAuthenticationSASL
+			err := x.Unmarshal(b)
+			return AuthenticationSASL(x), err
 		case 11:
-			var a AuthenticationSASLContinue
-			err := a.Unmarshal(b)
-			return a, err
+			var x xAuthenticationSASLContinue
+			err := x.Unmarshal(b)
+			return AuthenticationSASLContinue(x), err
 		case 12:
-			var a AuthenticationSASLFinal
-			err := a.Unmarshal(b)
-			return a, err
+			var x xAuthenticationSASLFinal
+			err := x.Unmarshal(b)
+			return AuthenticationSASLFinal(x), err
 		default:
-			var a Unknown
-			err := a.Unmarshal(b)
-			return a, err
+			return Unknown{}, nil
 		}
 	case KindKeyData:
-		var k BackendKeyData
-		err := k.Unmarshal(m.body)
-		return k, err
+		var x xBackendKeyData
+		err := x.Unmarshal(m.body)
+		return BackendKeyData(x), err
 	case KindBindComplete:
-		var c BindComplete
-		err := c.Unmarshal(m.body)
-		return c, err
+		var x xBindComplete
+		err := x.Unmarshal(m.body)
+		return BindComplete(x), err
 	case KindCloseComplete:
-		var c CloseComplete
-		err := c.Unmarshal(m.body)
-		return c, err
+		var x xCloseComplete
+		err := x.Unmarshal(m.body)
+		return CloseComplete(x), err
 	case KindCommandComplete:
-		var c CommandComplete
-		err := c.Unmarshal(m.body)
-		return c, err
+		var x xCommandComplete
+		err := x.Unmarshal(m.body)
+		return CommandComplete(x), err
 	case KindCopyData:
-		var c CopyData
-		err := c.Unmarshal(m.body)
-		return c, err
+		var x xCopyData
+		err := x.Unmarshal(m.body)
+		return CopyData(x), err
 	case KindCopyDone:
-		var c CopyDone
-		err := c.Unmarshal(m.body)
-		return c, err
+		var x xCopyDone
+		err := x.Unmarshal(m.body)
+		return CopyDone(x), err
 	case KindCopyInResponse:
-		var c CopyInResponse
-		err := c.Unmarshal(m.body)
-		return c, err
+		var x xCopyInResponse
+		err := x.Unmarshal(m.body)
+		return CopyInResponse(x), err
 	case KindCopyOutResponse:
-		var c CopyOutResponse
-		err := c.Unmarshal(m.body)
-		return c, err
+		var x xCopyOutResponse
+		err := x.Unmarshal(m.body)
+		return CopyOutResponse(x), err
 	case KindCopyBothResponse:
-		var c CopyBothResponse
-		err := c.Unmarshal(m.body)
-		return c, err
+		var x xCopyBothResponse
+		err := x.Unmarshal(m.body)
+		return CopyBothResponse(x), err
 	case KindDataRow:
-		var d DataRow
-		err := d.Unmarshal(m.body)
-		return d, err
+		var x xDataRow
+		err := x.Unmarshal(m.body)
+		return DataRow(x), err
 	case KindEmptyQueryResponse:
-		var e EmptyQueryResponse
-		err := e.Unmarshal(m.body)
-		return e, err
+		var x xEmptyQueryResponse
+		err := x.Unmarshal(m.body)
+		return EmptyQueryResponse(x), err
 	case KindErrorResponse:
-		var e ErrorResponse
-		err := e.Unmarshal(m.body)
-		return e, err
+		var x xErrorResponse
+		err := x.Unmarshal(m.body)
+		return ErrorResponse(x), err
 	case KindFunctionCallResponse:
-		var f FunctionCallResponse
-		err := f.Unmarshal(m.body)
-		return f, err
+		var x xFunctionCallResponse
+		err := x.Unmarshal(m.body)
+		return FunctionCallResponse(x), err
 	case KindNegotiateProtocolVersion:
-		var n NegotiateProtocolVersion
-		err := n.Unmarshal(m.body)
-		return n, err
+		var x xNegotiateProtocolVersion
+		err := x.Unmarshal(m.body)
+		return NegotiateProtocolVersion(x), err
 	case KindNoData:
-		var n NoData
-		err := n.Unmarshal(m.body)
-		return n, err
+		var x xNoData
+		err := x.Unmarshal(m.body)
+		return NoData(x), err
 	case KindNoticeResponse:
-		var n NoticeResponse
-		err := n.Unmarshal(m.body)
-		return n, err
+		var x xNoticeResponse
+		err := x.Unmarshal(m.body)
+		return NoticeResponse(x), err
 	case KindNotificationResponse:
-		var n NotificationResponse
-		err := n.Unmarshal(m.body)
-		return n, err
+		var x xNotificationResponse
+		err := x.Unmarshal(m.body)
+		return NotificationResponse(x), err
 	case KindParameterDescription:
-		var p ParameterDescription
-		err := p.Unmarshal(m.body)
-		return p, err
+		var x xParameterDescription
+		err := x.Unmarshal(m.body)
+		return ParameterDescription(x), err
 	default:
 		return Unknown{}, nil
 	}
