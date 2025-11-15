@@ -12,6 +12,10 @@ func writeField(buf *bytes.Buffer, f Field) {
 	buf.WriteByte(byte(f))
 }
 
+func writeFormat(buf *bytes.Buffer, f Format) {
+	writeInt16(buf, int16(f))
+}
+
 func writeKind(buf *bytes.Buffer, k Kind) {
 	buf.WriteByte(byte(k))
 }
@@ -747,5 +751,45 @@ func TestParseMessage(t *testing.T) {
 		require.True(t, ok)
 
 		require.Equal(t, TxStatusActive, result.TxStatus)
+	})
+
+	t.Run("RowDescription", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		writeInt16(&buf, 2)
+
+		writeString(&buf, "hello")
+		writeInt32(&buf, 101)
+		writeInt16(&buf, 102)
+		writeInt32(&buf, 103)
+		writeInt16(&buf, 104)
+		writeInt32(&buf, 105)
+		writeFormat(&buf, FormatBinary)
+
+		writeString(&buf, "world")
+		writeInt32(&buf, 201)
+		writeInt16(&buf, 202)
+		writeInt32(&buf, 203)
+		writeInt16(&buf, 204)
+		writeInt32(&buf, 205)
+		writeFormat(&buf, FormatBinary)
+
+		var m Message
+		m.kind = KindRowDescription
+		m.body = buf.Bytes()
+
+		var result RowDescription
+
+		ok, err := as(m, &result)
+		require.NoError(t, err)
+		require.True(t, ok)
+
+		require.Equal(t, []string{"hello", "world"}, result.Names)
+		require.Equal(t, []int32{101, 201}, result.Tables)
+		require.Equal(t, []int16{102, 202}, result.Columns)
+		require.Equal(t, []int32{103, 203}, result.DataTypes)
+		require.Equal(t, []int16{104, 204}, result.Sizes)
+		require.Equal(t, []int32{105, 205}, result.Modifiers)
+		require.Equal(t, []Format{FormatBinary, FormatBinary}, result.Formats)
 	})
 }

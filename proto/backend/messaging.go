@@ -101,6 +101,19 @@ const (
 	FormatBinary Format = 1
 )
 
+func ParseFormat(i int16) (Format, error) {
+	var err error
+	v := Format(i)
+
+	switch v {
+	case FormatText:
+	case FormatBinary:
+	default:
+		err = ErrInvalidValue
+	}
+	return v, err
+}
+
 type TxStatus byte
 
 const (
@@ -347,16 +360,23 @@ func (x *xCopyInResponse) UnmarshalBinary(b []byte) error {
 		return ErrShortRead
 	}
 
-	x.Format = Format(format)
+	x.Format, err = ParseFormat(int16(format))
+	if err != nil {
+		return err
+	}
+
 	x.Columns = make([]Format, int(columns))
-	for i := range len(x.Columns) {
+	for i := range columns {
 		var format int16
 		bread, err = readInt16(b, &format)
 		if err != nil {
 			return err
 		}
 		b = b[bread:]
-		x.Columns[i] = Format(format)
+		x.Columns[i], err = ParseFormat(format)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -387,16 +407,23 @@ func (x *xCopyOutResponse) UnmarshalBinary(b []byte) error {
 		return ErrShortRead
 	}
 
-	x.Format = Format(format)
+	x.Format, err = ParseFormat(int16(format))
+	if err != nil {
+		return err
+	}
+
 	x.Columns = make([]Format, int(columns))
-	for i := range len(x.Columns) {
+	for i := range columns {
 		var format int16
 		bread, err = readInt16(b, &format)
 		if err != nil {
 			return err
 		}
 		b = b[bread:]
-		x.Columns[i] = Format(format)
+		x.Columns[i], err = ParseFormat(format)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -427,16 +454,23 @@ func (x *xCopyBothResponse) UnmarshalBinary(b []byte) error {
 		return ErrShortRead
 	}
 
-	x.Format = Format(format)
+	x.Format, err = ParseFormat(int16(format))
+	if err != nil {
+		return err
+	}
+
 	x.Columns = make([]Format, int(columns))
-	for i := range len(x.Columns) {
+	for i := range columns {
 		var format int16
 		bread, err = readInt16(b, &format)
 		if err != nil {
 			return err
 		}
 		b = b[bread:]
-		x.Columns[i] = Format(format)
+		x.Columns[i], err = ParseFormat(format)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -748,6 +782,76 @@ type RowDescription struct {
 	Formats   []Format
 }
 
+type xRowDescription RowDescription
+
+func (x *xRowDescription) UnmarshalBinary(b []byte) error {
+	var length int16
+	bread, err := readInt16(b, &length)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+
+	x.Names = make([]string, length)
+	x.Tables = make([]int32, length)
+	x.Columns = make([]int16, length)
+	x.DataTypes = make([]int32, length)
+	x.Sizes = make([]int16, length)
+	x.Modifiers = make([]int32, length)
+	x.Formats = make([]Format, length)
+
+	for i := range length {
+		bread, err := readString(b, &x.Names[i])
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
+
+		bread, err = readInt32(b, &x.Tables[i])
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
+
+		bread, err = readInt16(b, &x.Columns[i])
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
+
+		bread, err = readInt32(b, &x.DataTypes[i])
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
+
+		bread, err = readInt16(b, &x.Sizes[i])
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
+
+		bread, err = readInt32(b, &x.Modifiers[i])
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
+
+		var format int16
+		bread, err = readInt16(b, &format)
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
+
+		x.Formats[i], err = ParseFormat(format)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type Unknown struct{}
 
 type Message struct {
@@ -942,6 +1046,10 @@ func (m *Message) Parse() (any, error) {
 		var x xReadyForQuery
 		err := x.UnmarshalBinary(m.body)
 		return ReadyForQuery(x), err
+	case KindRowDescription:
+		var x xRowDescription
+		err := x.UnmarshalBinary(m.body)
+		return RowDescription(x), err
 	default:
 		return Unknown{}, nil
 	}
