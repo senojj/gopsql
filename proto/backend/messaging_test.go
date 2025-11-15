@@ -702,4 +702,28 @@ func TestParseMessage(t *testing.T) {
 		require.Equal(t, "hello", result.Name)
 		require.Equal(t, "world", result.Value)
 	})
+
+	t.Run("ParseComplete", func(t *testing.T) {
+		var m Message
+		m.kind = KindParseComplete
+		m.body = []byte{}
+
+		var result ParseComplete
+
+		ok, err := as(m, &result)
+		require.NoError(t, err)
+		require.True(t, ok)
+	})
+
+	t.Run("PortalSuspended", func(t *testing.T) {
+		var m Message
+		m.kind = KindPortalSuspended
+		m.body = []byte{}
+
+		var result PortalSuspended
+
+		ok, err := as(m, &result)
+		require.NoError(t, err)
+		require.True(t, ok)
+	})
 }

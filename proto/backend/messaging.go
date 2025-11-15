@@ -691,7 +691,19 @@ func (x *xParameterStatus) UnmarshalBinary(b []byte) error {
 
 type ParseComplete struct{}
 
+type xParseComplete ParseComplete
+
+func (x *xParseComplete) UnmarshalBinary(_ []byte) error {
+	return nil
+}
+
 type PortalSuspended struct{}
+
+type xPortalSuspended PortalSuspended
+
+func (x *xPortalSuspended) UnmarshalBinary(_ []byte) error {
+	return nil
+}
 
 type ReadyForQuery struct {
 	TxStatus TxStatus
@@ -889,6 +901,14 @@ func (m *Message) Parse() (any, error) {
 		var x xParameterStatus
 		err := x.UnmarshalBinary(m.body)
 		return ParameterStatus(x), err
+	case KindParseComplete:
+		var x xParseComplete
+		err := x.UnmarshalBinary(m.body)
+		return ParseComplete(x), err
+	case KindPortalSuspended:
+		var x xPortalSuspended
+		err := x.UnmarshalBinary(m.body)
+		return PortalSuspended(x), err
 	default:
 		return Unknown{}, nil
 	}
