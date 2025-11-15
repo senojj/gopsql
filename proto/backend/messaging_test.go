@@ -16,6 +16,10 @@ func writeKind(buf *bytes.Buffer, k Kind) {
 	buf.WriteByte(byte(k))
 }
 
+func writeTxStatus(buf *bytes.Buffer, s TxStatus) {
+	buf.WriteByte(byte(s))
+}
+
 func writeInt8(buf *bytes.Buffer, i byte) {
 	buf.WriteByte(i)
 }
@@ -725,5 +729,23 @@ func TestParseMessage(t *testing.T) {
 		ok, err := as(m, &result)
 		require.NoError(t, err)
 		require.True(t, ok)
+	})
+
+	t.Run("ReadyForQuery", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		writeTxStatus(&buf, TxStatusActive)
+
+		var m Message
+		m.kind = KindReadyForQuery
+		m.body = buf.Bytes()
+
+		var result ReadyForQuery
+
+		ok, err := as(m, &result)
+		require.NoError(t, err)
+		require.True(t, ok)
+
+		require.Equal(t, TxStatusActive, result.TxStatus)
 	})
 }

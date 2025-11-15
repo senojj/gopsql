@@ -38,7 +38,7 @@ const (
 	KindParameterStatus          Kind = 'S'
 	KindParseComplete            Kind = '1'
 	KindPortalSuspended          Kind = 's'
-	KindReadyForQuey             Kind = 'Z'
+	KindReadyForQuery            Kind = 'Z'
 	KindRowDescription           Kind = 'T'
 )
 
@@ -108,6 +108,20 @@ const (
 	TxStatusActive TxStatus = 'T'
 	TxStatusError  TxStatus = 'E'
 )
+
+func ParseTxStatus(b byte) (TxStatus, error) {
+	var err error
+	v := TxStatus(b)
+
+	switch v {
+	case TxStatusIdle:
+	case TxStatusActive:
+	case TxStatusError:
+	default:
+		err = ErrInvalidValue
+	}
+	return v, err
+}
 
 type xAuthentication struct {
 	Kind int32
@@ -709,6 +723,21 @@ type ReadyForQuery struct {
 	TxStatus TxStatus
 }
 
+type xReadyForQuery ReadyForQuery
+
+func (x *xReadyForQuery) UnmarshalBinary(b []byte) error {
+	var status byte
+	_, err := readByte(b, &status)
+	if err != nil {
+		return err
+	}
+	x.TxStatus, err = ParseTxStatus(status)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type RowDescription struct {
 	Names     []string
 	Tables    []int32
@@ -909,6 +938,10 @@ func (m *Message) Parse() (any, error) {
 		var x xPortalSuspended
 		err := x.UnmarshalBinary(m.body)
 		return PortalSuspended(x), err
+	case KindReadyForQuery:
+		var x xReadyForQuery
+		err := x.UnmarshalBinary(m.body)
+		return ReadyForQuery(x), err
 	default:
 		return Unknown{}, nil
 	}
