@@ -109,11 +109,27 @@ const (
 	TxStatusError  TxStatus = 'E'
 )
 
+type xAuthentication struct {
+	Kind int32
+	Data []byte
+}
+
+func (x *xAuthentication) UnmarshalBinary(b []byte) error {
+	bread, err := readInt32(b, &x.Kind)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+	x.Data = make([]byte, len(b))
+	copy(x.Data, b)
+	return nil
+}
+
 type AuthenticationOk struct{}
 
 type xAuthenticationOk AuthenticationOk
 
-func (x *xAuthenticationOk) Unmarshal(_ []byte) error {
+func (x *xAuthenticationOk) UnmarshalBinary(_ []byte) error {
 	return nil
 }
 
@@ -121,7 +137,7 @@ type AuthenticationKerberosV5 struct{}
 
 type xAuthenticationKerberosV5 AuthenticationKerberosV5
 
-func (x *xAuthenticationKerberosV5) Unmarshal(_ []byte) error {
+func (x *xAuthenticationKerberosV5) UnmarshalBinary(_ []byte) error {
 	return nil
 }
 
@@ -129,7 +145,7 @@ type AuthenticationCleartextPassword struct{}
 
 type xAuthenticationCleartextPassword AuthenticationCleartextPassword
 
-func (x *xAuthenticationCleartextPassword) Unmarshal(_ []byte) error {
+func (x *xAuthenticationCleartextPassword) UnmarshalBinary(_ []byte) error {
 	return nil
 }
 
@@ -139,7 +155,7 @@ type AuthenticationMD5Password struct {
 
 type xAuthenticationMD5Password AuthenticationMD5Password
 
-func (x *xAuthenticationMD5Password) Unmarshal(b []byte) error {
+func (x *xAuthenticationMD5Password) UnmarshalBinary(b []byte) error {
 	copy(x.Salt[:], b)
 	return nil
 }
@@ -148,7 +164,7 @@ type AuthenticationGSS struct{}
 
 type xAuthenticationGSS AuthenticationGSS
 
-func (x *xAuthenticationGSS) Unmarshal(_ []byte) error {
+func (x *xAuthenticationGSS) UnmarshalBinary(_ []byte) error {
 	return nil
 }
 
@@ -158,7 +174,7 @@ type AuthenticationGSSContinue struct {
 
 type xAuthenticationGSSContinue AuthenticationGSSContinue
 
-func (x *xAuthenticationGSSContinue) Unmarshal(b []byte) error {
+func (x *xAuthenticationGSSContinue) UnmarshalBinary(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
 	return nil
@@ -168,7 +184,7 @@ type AuthenticationSSPI struct{}
 
 type xAuthenticationSSPI AuthenticationSSPI
 
-func (x *xAuthenticationSSPI) Unmarshal(_ []byte) error {
+func (x *xAuthenticationSSPI) UnmarshalBinary(_ []byte) error {
 	return nil
 }
 
@@ -178,7 +194,7 @@ type AuthenticationSASL struct {
 
 type xAuthenticationSASL AuthenticationSASL
 
-func (x *xAuthenticationSASL) Unmarshal(b []byte) error {
+func (x *xAuthenticationSASL) UnmarshalBinary(b []byte) error {
 	for len(b) > 1 {
 		var mechanism string
 		bread, err := readString(b, &mechanism)
@@ -197,7 +213,7 @@ type AuthenticationSASLContinue struct {
 
 type xAuthenticationSASLContinue AuthenticationSASLContinue
 
-func (x *xAuthenticationSASLContinue) Unmarshal(b []byte) error {
+func (x *xAuthenticationSASLContinue) UnmarshalBinary(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
 	return nil
@@ -209,7 +225,7 @@ type AuthenticationSASLFinal struct {
 
 type xAuthenticationSASLFinal AuthenticationSASLFinal
 
-func (x *xAuthenticationSASLFinal) Unmarshal(b []byte) error {
+func (x *xAuthenticationSASLFinal) UnmarshalBinary(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
 	return nil
@@ -222,7 +238,7 @@ type BackendKeyData struct {
 
 type xBackendKeyData BackendKeyData
 
-func (x *xBackendKeyData) Unmarshal(b []byte) error {
+func (x *xBackendKeyData) UnmarshalBinary(b []byte) error {
 	if len(b) < 4 {
 		return ErrShortRead
 	}
@@ -248,7 +264,7 @@ type BindComplete struct{}
 
 type xBindComplete BindComplete
 
-func (x *xBindComplete) Unmarshal(_ []byte) error {
+func (x *xBindComplete) UnmarshalBinary(_ []byte) error {
 	return nil
 }
 
@@ -256,7 +272,7 @@ type CloseComplete struct{}
 
 type xCloseComplete CloseComplete
 
-func (x *xCloseComplete) Unmarshal(_ []byte) error {
+func (x *xCloseComplete) UnmarshalBinary(_ []byte) error {
 	return nil
 }
 
@@ -266,7 +282,7 @@ type CommandComplete struct {
 
 type xCommandComplete CommandComplete
 
-func (x *xCommandComplete) Unmarshal(b []byte) error {
+func (x *xCommandComplete) UnmarshalBinary(b []byte) error {
 	_, err := readString(b, &x.Tag)
 	return err
 }
@@ -277,7 +293,7 @@ type CopyData struct {
 
 type xCopyData CopyData
 
-func (x *xCopyData) Unmarshal(b []byte) error {
+func (x *xCopyData) UnmarshalBinary(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
 	return nil
@@ -287,7 +303,7 @@ type CopyDone struct{}
 
 type xCopyDone CopyDone
 
-func (x *xCopyDone) Unmarshal(_ []byte) error {
+func (x *xCopyDone) UnmarshalBinary(_ []byte) error {
 	return nil
 }
 
@@ -298,7 +314,7 @@ type CopyInResponse struct {
 
 type xCopyInResponse CopyInResponse
 
-func (x *xCopyInResponse) Unmarshal(b []byte) error {
+func (x *xCopyInResponse) UnmarshalBinary(b []byte) error {
 	var format int8
 	bread, err := readInt8(b, &format)
 	if err != nil {
@@ -338,7 +354,7 @@ type CopyOutResponse struct {
 
 type xCopyOutResponse CopyOutResponse
 
-func (x *xCopyOutResponse) Unmarshal(b []byte) error {
+func (x *xCopyOutResponse) UnmarshalBinary(b []byte) error {
 	var format int8
 	bread, err := readInt8(b, &format)
 	if err != nil {
@@ -378,7 +394,7 @@ type CopyBothResponse struct {
 
 type xCopyBothResponse CopyBothResponse
 
-func (x *xCopyBothResponse) Unmarshal(b []byte) error {
+func (x *xCopyBothResponse) UnmarshalBinary(b []byte) error {
 	var format int8
 	bread, err := readInt8(b, &format)
 	if err != nil {
@@ -420,7 +436,7 @@ type DataRow struct {
 
 type xDataRow DataRow
 
-func (x *xDataRow) Unmarshal(b []byte) error {
+func (x *xDataRow) UnmarshalBinary(b []byte) error {
 	var columns int16
 	bread, err := readInt16(b, &columns)
 	if err != nil {
@@ -452,7 +468,7 @@ type EmptyQueryResponse struct{}
 
 type xEmptyQueryResponse EmptyQueryResponse
 
-func (x *xEmptyQueryResponse) Unmarshal(_ []byte) error {
+func (x *xEmptyQueryResponse) UnmarshalBinary(_ []byte) error {
 	return nil
 }
 
@@ -463,7 +479,7 @@ type ErrorResponse struct {
 
 type xErrorResponse ErrorResponse
 
-func (x *xErrorResponse) Unmarshal(b []byte) error {
+func (x *xErrorResponse) UnmarshalBinary(b []byte) error {
 	var f byte
 	bread, err := readByte(b, &f)
 	if err != nil {
@@ -500,7 +516,7 @@ type FunctionCallResponse struct {
 
 type xFunctionCallResponse FunctionCallResponse
 
-func (x *xFunctionCallResponse) Unmarshal(b []byte) error {
+func (x *xFunctionCallResponse) UnmarshalBinary(b []byte) error {
 	var length int32
 	bread, err := readInt32(b, &length)
 	if err != nil {
@@ -523,7 +539,7 @@ type NegotiateProtocolVersion struct {
 
 type xNegotiateProtocolVersion NegotiateProtocolVersion
 
-func (x *xNegotiateProtocolVersion) Unmarshal(b []byte) error {
+func (x *xNegotiateProtocolVersion) UnmarshalBinary(b []byte) error {
 	bread, err := readInt32(b, &x.MinorVersionSupported)
 	if err != nil {
 		return err
@@ -555,7 +571,7 @@ type NoData struct{}
 
 type xNoData NoData
 
-func (x *xNoData) Unmarshal(_ []byte) error {
+func (x *xNoData) UnmarshalBinary(_ []byte) error {
 	return nil
 }
 
@@ -566,7 +582,7 @@ type NoticeResponse struct {
 
 type xNoticeResponse NoticeResponse
 
-func (x *xNoticeResponse) Unmarshal(b []byte) error {
+func (x *xNoticeResponse) UnmarshalBinary(b []byte) error {
 	var f byte
 	bread, err := readByte(b, &f)
 	if err != nil {
@@ -604,7 +620,7 @@ type NotificationResponse struct {
 
 type xNotificationResponse NotificationResponse
 
-func (x *xNotificationResponse) Unmarshal(b []byte) error {
+func (x *xNotificationResponse) UnmarshalBinary(b []byte) error {
 	bread, err := readInt32(b, &x.ProcessID)
 	if err != nil {
 		return err
@@ -630,7 +646,7 @@ type ParameterDescription struct {
 
 type xParameterDescription ParameterDescription
 
-func (x *xParameterDescription) Unmarshal(b []byte) error {
+func (x *xParameterDescription) UnmarshalBinary(b []byte) error {
 	var length int16
 	bread, err := readInt16(b, &length)
 	if err != nil {
@@ -731,128 +747,127 @@ func (m *Message) Unmarshal(r io.Reader) error {
 func (m *Message) Parse() (any, error) {
 	switch m.kind {
 	case KindAuthentication:
-		var s int32
-		bread, err := readInt32(m.body, &s)
+		var auth xAuthentication
+		err := auth.UnmarshalBinary(m.body)
 		if err != nil {
 			return nil, err
 		}
-		b := m.body[bread:]
 
-		switch s {
+		switch auth.Kind {
 		case 0:
 			var x xAuthenticationOk
-			err := x.Unmarshal(b)
+			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationOk(x), err
 		case 2:
 			var x xAuthenticationKerberosV5
-			err := x.Unmarshal(b)
+			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationKerberosV5(x), err
 		case 3:
 			var x xAuthenticationCleartextPassword
-			err := x.Unmarshal(b)
+			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationCleartextPassword(x), err
 		case 5:
 			var x xAuthenticationMD5Password
-			err := x.Unmarshal(b)
+			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationMD5Password(x), err
 		case 7:
 			var x xAuthenticationGSS
-			err := x.Unmarshal(b)
+			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationGSS(x), err
 		case 8:
 			var x xAuthenticationGSSContinue
-			err := x.Unmarshal(b)
+			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationGSSContinue(x), err
 		case 9:
 			var x xAuthenticationSSPI
-			err := x.Unmarshal(b)
+			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationSSPI(x), err
 		case 10:
 			var x xAuthenticationSASL
-			err := x.Unmarshal(b)
+			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationSASL(x), err
 		case 11:
 			var x xAuthenticationSASLContinue
-			err := x.Unmarshal(b)
+			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationSASLContinue(x), err
 		case 12:
 			var x xAuthenticationSASLFinal
-			err := x.Unmarshal(b)
+			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationSASLFinal(x), err
 		default:
 			return Unknown{}, nil
 		}
 	case KindKeyData:
 		var x xBackendKeyData
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return BackendKeyData(x), err
 	case KindBindComplete:
 		var x xBindComplete
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return BindComplete(x), err
 	case KindCloseComplete:
 		var x xCloseComplete
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return CloseComplete(x), err
 	case KindCommandComplete:
 		var x xCommandComplete
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return CommandComplete(x), err
 	case KindCopyData:
 		var x xCopyData
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return CopyData(x), err
 	case KindCopyDone:
 		var x xCopyDone
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return CopyDone(x), err
 	case KindCopyInResponse:
 		var x xCopyInResponse
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return CopyInResponse(x), err
 	case KindCopyOutResponse:
 		var x xCopyOutResponse
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return CopyOutResponse(x), err
 	case KindCopyBothResponse:
 		var x xCopyBothResponse
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return CopyBothResponse(x), err
 	case KindDataRow:
 		var x xDataRow
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return DataRow(x), err
 	case KindEmptyQueryResponse:
 		var x xEmptyQueryResponse
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return EmptyQueryResponse(x), err
 	case KindErrorResponse:
 		var x xErrorResponse
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return ErrorResponse(x), err
 	case KindFunctionCallResponse:
 		var x xFunctionCallResponse
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return FunctionCallResponse(x), err
 	case KindNegotiateProtocolVersion:
 		var x xNegotiateProtocolVersion
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return NegotiateProtocolVersion(x), err
 	case KindNoData:
 		var x xNoData
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return NoData(x), err
 	case KindNoticeResponse:
 		var x xNoticeResponse
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return NoticeResponse(x), err
 	case KindNotificationResponse:
 		var x xNotificationResponse
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return NotificationResponse(x), err
 	case KindParameterDescription:
 		var x xParameterDescription
-		err := x.Unmarshal(m.body)
+		err := x.UnmarshalBinary(m.body)
 		return ParameterDescription(x), err
 	default:
 		return Unknown{}, nil
