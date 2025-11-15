@@ -673,6 +673,22 @@ type ParameterStatus struct {
 	Value string
 }
 
+type xParameterStatus ParameterStatus
+
+func (x *xParameterStatus) UnmarshalBinary(b []byte) error {
+	bread, err := readString(b, &x.Name)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+
+	bread, err = readString(b, &x.Value)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type ParseComplete struct{}
 
 type PortalSuspended struct{}
@@ -869,6 +885,10 @@ func (m *Message) Parse() (any, error) {
 		var x xParameterDescription
 		err := x.UnmarshalBinary(m.body)
 		return ParameterDescription(x), err
+	case KindParameterStatus:
+		var x xParameterStatus
+		err := x.UnmarshalBinary(m.body)
+		return ParameterStatus(x), err
 	default:
 		return Unknown{}, nil
 	}
