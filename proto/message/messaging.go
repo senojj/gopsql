@@ -237,6 +237,23 @@ type AuthenticationOk struct{}
 
 type xAuthenticationOk AuthenticationOk
 
+func (x *xAuthenticationOk) MarshalBinary() ([]byte, error) {
+	var auth xAuthentication
+	auth.Kind = AuthKindOk
+	auth.Data = []byte{}
+
+	b, err := auth.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	var msg xMessage
+	msg.Kind = KindAuthentication
+	msg.Data = b
+
+	return msg.MarshalBinary()
+}
+
 func (x *xAuthenticationOk) UnmarshalBinary(_ []byte) error {
 	return nil
 }
@@ -933,8 +950,20 @@ func (x *xRowDescription) UnmarshalBinary(b []byte) error {
 type Unknown struct{}
 
 type Message struct {
-	kind Kind
-	body []byte
+	Kind Kind
+	Data []byte
+}
+
+type xMessage Message
+
+func (m *xMessage) MarshalBinary() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeKind(&buf, m.Kind)
+	writeInt32(&buf, int32(len(m.Data)))
+	writeBytes(&buf, m.Data)
+
+	return buf.Bytes(), nil
 }
 
 func ReadMessage(r io.Reader, m *Message) error {
@@ -965,7 +994,7 @@ func ReadMessage(r io.Reader, m *Message) error {
 		return io.ErrUnexpectedEOF
 	}
 
-	m.kind, err = ParseKind(byteKind[0])
+	m.Kind, err = ParseKind(byteKind[0])
 	if err != nil {
 		return err
 	}
@@ -984,16 +1013,16 @@ func ReadMessage(r io.Reader, m *Message) error {
 	if bread != int(length) {
 		return io.ErrUnexpectedEOF
 	}
-	m.body = byteBody
+	m.Data = byteBody
 
 	return nil
 }
 
 func (m *Message) Parse() (any, error) {
-	switch m.kind {
+	switch m.Kind {
 	case KindAuthentication:
 		var auth xAuthentication
-		err := auth.UnmarshalBinary(m.body)
+		err := auth.UnmarshalBinary(m.Data)
 		if err != nil {
 			return nil, err
 		}
@@ -1044,95 +1073,95 @@ func (m *Message) Parse() (any, error) {
 		}
 	case KindKeyData:
 		var x xBackendKeyData
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return BackendKeyData(x), err
 	case KindBindComplete:
 		var x xBindComplete
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return BindComplete(x), err
 	case KindCloseComplete:
 		var x xCloseComplete
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return CloseComplete(x), err
 	case KindCommandComplete:
 		var x xCommandComplete
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return CommandComplete(x), err
 	case KindCopyData:
 		var x xCopyData
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return CopyData(x), err
 	case KindCopyDone:
 		var x xCopyDone
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return CopyDone(x), err
 	case KindCopyInResponse:
 		var x xCopyInResponse
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return CopyInResponse(x), err
 	case KindCopyOutResponse:
 		var x xCopyOutResponse
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return CopyOutResponse(x), err
 	case KindCopyBothResponse:
 		var x xCopyBothResponse
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return CopyBothResponse(x), err
 	case KindDataRow:
 		var x xDataRow
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return DataRow(x), err
 	case KindEmptyQueryResponse:
 		var x xEmptyQueryResponse
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return EmptyQueryResponse(x), err
 	case KindErrorResponse:
 		var x xErrorResponse
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return ErrorResponse(x), err
 	case KindFunctionCallResponse:
 		var x xFunctionCallResponse
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return FunctionCallResponse(x), err
 	case KindNegotiateProtocolVersion:
 		var x xNegotiateProtocolVersion
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return NegotiateProtocolVersion(x), err
 	case KindNoData:
 		var x xNoData
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return NoData(x), err
 	case KindNoticeResponse:
 		var x xNoticeResponse
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return NoticeResponse(x), err
 	case KindNotificationResponse:
 		var x xNotificationResponse
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return NotificationResponse(x), err
 	case KindParameterDescription:
 		var x xParameterDescription
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return ParameterDescription(x), err
 	case KindParameterStatus:
 		var x xParameterStatus
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return ParameterStatus(x), err
 	case KindParseComplete:
 		var x xParseComplete
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return ParseComplete(x), err
 	case KindPortalSuspended:
 		var x xPortalSuspended
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return PortalSuspended(x), err
 	case KindReadyForQuery:
 		var x xReadyForQuery
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return ReadyForQuery(x), err
 	case KindRowDescription:
 		var x xRowDescription
-		err := x.UnmarshalBinary(m.body)
+		err := x.UnmarshalBinary(m.Data)
 		return RowDescription(x), err
 	default:
 		return Unknown{}, nil

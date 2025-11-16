@@ -119,11 +119,11 @@ func TestReadMessage(t *testing.T) {
 	err := ReadMessage(&buf, &m)
 	require.NoError(t, err)
 
-	require.Equal(t, KindAuthentication, m.kind)
+	require.Equal(t, KindAuthentication, m.Kind)
 
 	expected := make([]byte, 4)
 	binary.BigEndian.PutUint32(expected, 0)
-	require.Equal(t, expected, m.body)
+	require.Equal(t, expected, m.Data)
 }
 
 func TestParseMessage(t *testing.T) {
@@ -133,8 +133,8 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 0)
 
 		var m Message
-		m.kind = KindAuthentication
-		m.body = buf.Bytes()
+		m.Kind = KindAuthentication
+		m.Data = buf.Bytes()
 
 		var result AuthenticationOk
 
@@ -149,8 +149,8 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 2)
 
 		var m Message
-		m.kind = KindAuthentication
-		m.body = buf.Bytes()
+		m.Kind = KindAuthentication
+		m.Data = buf.Bytes()
 
 		var result AuthenticationKerberosV5
 
@@ -165,8 +165,8 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 3)
 
 		var m Message
-		m.kind = KindAuthentication
-		m.body = buf.Bytes()
+		m.Kind = KindAuthentication
+		m.Data = buf.Bytes()
 
 		var result AuthenticationCleartextPassword
 
@@ -182,8 +182,8 @@ func TestParseMessage(t *testing.T) {
 		writeBytes(&buf, []byte("abcd")) // salt
 
 		var m Message
-		m.kind = KindAuthentication
-		m.body = buf.Bytes()
+		m.Kind = KindAuthentication
+		m.Data = buf.Bytes()
 
 		var result AuthenticationMD5Password
 
@@ -200,8 +200,8 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 7)
 
 		var m Message
-		m.kind = KindAuthentication
-		m.body = buf.Bytes()
+		m.Kind = KindAuthentication
+		m.Data = buf.Bytes()
 
 		var result AuthenticationGSS
 
@@ -217,8 +217,8 @@ func TestParseMessage(t *testing.T) {
 		writeBytes(&buf, []byte("hello"))
 
 		var m Message
-		m.kind = KindAuthentication
-		m.body = buf.Bytes()
+		m.Kind = KindAuthentication
+		m.Data = buf.Bytes()
 
 		var result AuthenticationGSSContinue
 
@@ -235,8 +235,8 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 9)
 
 		var m Message
-		m.kind = KindAuthentication
-		m.body = buf.Bytes()
+		m.Kind = KindAuthentication
+		m.Data = buf.Bytes()
 
 		var result AuthenticationSSPI
 
@@ -254,8 +254,8 @@ func TestParseMessage(t *testing.T) {
 		writeString(&buf, "three")
 
 		var m Message
-		m.kind = KindAuthentication
-		m.body = buf.Bytes()
+		m.Kind = KindAuthentication
+		m.Data = buf.Bytes()
 
 		var result AuthenticationSASL
 
@@ -273,8 +273,8 @@ func TestParseMessage(t *testing.T) {
 		writeBytes(&buf, []byte("hello"))
 
 		var m Message
-		m.kind = KindAuthentication
-		m.body = buf.Bytes()
+		m.Kind = KindAuthentication
+		m.Data = buf.Bytes()
 
 		var result AuthenticationSASLContinue
 
@@ -292,8 +292,8 @@ func TestParseMessage(t *testing.T) {
 		writeBytes(&buf, []byte("hello"))
 
 		var m Message
-		m.kind = KindAuthentication
-		m.body = buf.Bytes()
+		m.Kind = KindAuthentication
+		m.Data = buf.Bytes()
 
 		var result AuthenticationSASLFinal
 
@@ -311,8 +311,8 @@ func TestParseMessage(t *testing.T) {
 		writeBytes(&buf, []byte("hello"))
 
 		var m Message
-		m.kind = KindKeyData
-		m.body = buf.Bytes()
+		m.Kind = KindKeyData
+		m.Data = buf.Bytes()
 
 		var result BackendKeyData
 
@@ -326,8 +326,8 @@ func TestParseMessage(t *testing.T) {
 
 	t.Run("BindComplete", func(t *testing.T) {
 		var m Message
-		m.kind = KindBindComplete
-		m.body = []byte{}
+		m.Kind = KindBindComplete
+		m.Data = []byte{}
 
 		var result BindComplete
 
@@ -338,8 +338,8 @@ func TestParseMessage(t *testing.T) {
 
 	t.Run("CloseComplete", func(t *testing.T) {
 		var m Message
-		m.kind = KindCloseComplete
-		m.body = []byte{}
+		m.Kind = KindCloseComplete
+		m.Data = []byte{}
 
 		var result CloseComplete
 
@@ -354,8 +354,8 @@ func TestParseMessage(t *testing.T) {
 		writeString(&buf, "INSERT 11 11")
 
 		var m Message
-		m.kind = KindCommandComplete
-		m.body = buf.Bytes()
+		m.Kind = KindCommandComplete
+		m.Data = buf.Bytes()
 
 		var result CommandComplete
 
@@ -372,8 +372,8 @@ func TestParseMessage(t *testing.T) {
 		writeBytes(&buf, []byte("hello"))
 
 		var m Message
-		m.kind = KindCopyData
-		m.body = buf.Bytes()
+		m.Kind = KindCopyData
+		m.Data = buf.Bytes()
 
 		var result CopyData
 
@@ -386,8 +386,8 @@ func TestParseMessage(t *testing.T) {
 
 	t.Run("CopyDone", func(t *testing.T) {
 		var m Message
-		m.kind = KindCopyDone
-		m.body = []byte{}
+		m.Kind = KindCopyDone
+		m.Data = []byte{}
 
 		var result CopyDone
 
@@ -405,8 +405,8 @@ func TestParseMessage(t *testing.T) {
 		writeInt16(&buf, int16(FormatBinary))
 
 		var m Message
-		m.kind = KindCopyInResponse
-		m.body = buf.Bytes()
+		m.Kind = KindCopyInResponse
+		m.Data = buf.Bytes()
 
 		var result CopyInResponse
 
@@ -427,8 +427,8 @@ func TestParseMessage(t *testing.T) {
 		writeInt16(&buf, int16(FormatBinary))
 
 		var m Message
-		m.kind = KindCopyOutResponse
-		m.body = buf.Bytes()
+		m.Kind = KindCopyOutResponse
+		m.Data = buf.Bytes()
 
 		var result CopyOutResponse
 
@@ -449,8 +449,8 @@ func TestParseMessage(t *testing.T) {
 		writeInt16(&buf, int16(FormatBinary))
 
 		var m Message
-		m.kind = KindCopyBothResponse
-		m.body = buf.Bytes()
+		m.Kind = KindCopyBothResponse
+		m.Data = buf.Bytes()
 
 		var result CopyBothResponse
 
@@ -474,8 +474,8 @@ func TestParseMessage(t *testing.T) {
 		writeBytes(&buf, []byte("world"))
 
 		var m Message
-		m.kind = KindDataRow
-		m.body = buf.Bytes()
+		m.Kind = KindDataRow
+		m.Data = buf.Bytes()
 
 		var result DataRow
 
@@ -493,8 +493,8 @@ func TestParseMessage(t *testing.T) {
 
 	t.Run("EmptyQueryResponse", func(t *testing.T) {
 		var m Message
-		m.kind = KindEmptyQueryResponse
-		m.body = []byte{}
+		m.Kind = KindEmptyQueryResponse
+		m.Data = []byte{}
 
 		var result EmptyQueryResponse
 
@@ -513,8 +513,8 @@ func TestParseMessage(t *testing.T) {
 		writeInt8(&buf, 0)
 
 		var m Message
-		m.kind = KindErrorResponse
-		m.body = buf.Bytes()
+		m.Kind = KindErrorResponse
+		m.Data = buf.Bytes()
 
 		var result ErrorResponse
 
@@ -533,8 +533,8 @@ func TestParseMessage(t *testing.T) {
 		writeBytes(&buf, []byte("hello world")) // function response data
 
 		var m Message
-		m.kind = KindFunctionCallResponse
-		m.body = buf.Bytes()
+		m.Kind = KindFunctionCallResponse
+		m.Data = buf.Bytes()
 
 		var result FunctionCallResponse
 
@@ -554,8 +554,8 @@ func TestParseMessage(t *testing.T) {
 		writeString(&buf, "world") // second unrecognized protocol
 
 		var m Message
-		m.kind = KindNegotiateProtocolVersion
-		m.body = buf.Bytes()
+		m.Kind = KindNegotiateProtocolVersion
+		m.Data = buf.Bytes()
 
 		var result NegotiateProtocolVersion
 
@@ -569,8 +569,8 @@ func TestParseMessage(t *testing.T) {
 
 	t.Run("NoData", func(t *testing.T) {
 		var m Message
-		m.kind = KindNoData
-		m.body = []byte{}
+		m.Kind = KindNoData
+		m.Data = []byte{}
 
 		var result NoData
 
@@ -589,8 +589,8 @@ func TestParseMessage(t *testing.T) {
 		writeInt8(&buf, 0)
 
 		var m Message
-		m.kind = KindNoticeResponse
-		m.body = buf.Bytes()
+		m.Kind = KindNoticeResponse
+		m.Data = buf.Bytes()
 
 		var result NoticeResponse
 
@@ -610,8 +610,8 @@ func TestParseMessage(t *testing.T) {
 		writeString(&buf, "world")
 
 		var m Message
-		m.kind = KindNotificationResponse
-		m.body = buf.Bytes()
+		m.Kind = KindNotificationResponse
+		m.Data = buf.Bytes()
 
 		var result NotificationResponse
 
@@ -632,8 +632,8 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 2)
 
 		var m Message
-		m.kind = KindParameterDescription
-		m.body = buf.Bytes()
+		m.Kind = KindParameterDescription
+		m.Data = buf.Bytes()
 
 		var result ParameterDescription
 
@@ -653,8 +653,8 @@ func TestParseMessage(t *testing.T) {
 		writeString(&buf, "world")
 
 		var m Message
-		m.kind = KindParameterStatus
-		m.body = buf.Bytes()
+		m.Kind = KindParameterStatus
+		m.Data = buf.Bytes()
 
 		var result ParameterStatus
 
@@ -668,8 +668,8 @@ func TestParseMessage(t *testing.T) {
 
 	t.Run("ParseComplete", func(t *testing.T) {
 		var m Message
-		m.kind = KindParseComplete
-		m.body = []byte{}
+		m.Kind = KindParseComplete
+		m.Data = []byte{}
 
 		var result ParseComplete
 
@@ -680,8 +680,8 @@ func TestParseMessage(t *testing.T) {
 
 	t.Run("PortalSuspended", func(t *testing.T) {
 		var m Message
-		m.kind = KindPortalSuspended
-		m.body = []byte{}
+		m.Kind = KindPortalSuspended
+		m.Data = []byte{}
 
 		var result PortalSuspended
 
@@ -696,8 +696,8 @@ func TestParseMessage(t *testing.T) {
 		writeTxStatus(&buf, TxStatusActive)
 
 		var m Message
-		m.kind = KindReadyForQuery
-		m.body = buf.Bytes()
+		m.Kind = KindReadyForQuery
+		m.Data = buf.Bytes()
 
 		var result ReadyForQuery
 
@@ -730,8 +730,8 @@ func TestParseMessage(t *testing.T) {
 		writeFormat(&buf, FormatBinary)
 
 		var m Message
-		m.kind = KindRowDescription
-		m.body = buf.Bytes()
+		m.Kind = KindRowDescription
+		m.Data = buf.Bytes()
 
 		var result RowDescription
 
