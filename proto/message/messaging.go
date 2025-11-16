@@ -207,30 +207,79 @@ func ParseTxStatus(b byte) (TxStatus, error) {
 	return v, err
 }
 
-type xAuthentication struct {
-	Kind AuthKind
-	Data []byte
+type Authentication struct {
+	kind AuthKind
+	data []byte
 }
+
+type xAuthentication Authentication
 
 func (x *xAuthentication) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
-	writeAuthKind(&buf, x.Kind)
-	writeBytes(&buf, x.Data)
+	writeAuthKind(&buf, x.kind)
+	writeBytes(&buf, x.data)
 
 	return buf.Bytes(), nil
 }
 
 func (x *xAuthentication) UnmarshalBinary(b []byte) error {
-	bread, err := readAuthKind(b, &x.Kind)
+	bread, err := readAuthKind(b, &x.kind)
 	if err != nil {
 		return err
 	}
 	b = b[bread:]
 
-	x.Data = make([]byte, len(b))
-	copy(x.Data, b)
+	x.data = make([]byte, len(b))
+	copy(x.data, b)
 	return nil
+}
+
+func (a *Authentication) Parse() (any, error) {
+	switch a.kind {
+	case AuthKindOk:
+		var x xAuthenticationOk
+		err := x.UnmarshalBinary(a.data)
+		return AuthenticationOk(x), err
+	case AuthKindKerberosV5:
+		var x xAuthenticationKerberosV5
+		err := x.UnmarshalBinary(a.data)
+		return AuthenticationKerberosV5(x), err
+	case AuthKindCleartextPassword:
+		var x xAuthenticationCleartextPassword
+		err := x.UnmarshalBinary(a.data)
+		return AuthenticationCleartextPassword(x), err
+	case AuthKindMD5Password:
+		var x xAuthenticationMD5Password
+		err := x.UnmarshalBinary(a.data)
+		return AuthenticationMD5Password(x), err
+	case AuthKindGSS:
+		var x xAuthenticationGSS
+		err := x.UnmarshalBinary(a.data)
+		return AuthenticationGSS(x), err
+	case AuthKindGSSContinue:
+		var x xAuthenticationGSSContinue
+		err := x.UnmarshalBinary(a.data)
+		return AuthenticationGSSContinue(x), err
+	case AuthKindSSPI:
+		var x xAuthenticationSSPI
+		err := x.UnmarshalBinary(a.data)
+		return AuthenticationSSPI(x), err
+	case AuthKindSASL:
+		var x xAuthenticationSASL
+		err := x.UnmarshalBinary(a.data)
+		return AuthenticationSASL(x), err
+	case AuthKindSASLContinue:
+		var x xAuthenticationSASLContinue
+		err := x.UnmarshalBinary(a.data)
+		return AuthenticationSASLContinue(x), err
+	case AuthKindSASLFinal:
+		var x xAuthenticationSASLFinal
+		err := x.UnmarshalBinary(a.data)
+		return AuthenticationSASLFinal(x), err
+	default:
+		return Unknown{}, nil
+	}
 }
 
 type AuthenticationOk struct{}
@@ -238,20 +287,7 @@ type AuthenticationOk struct{}
 type xAuthenticationOk AuthenticationOk
 
 func (x *xAuthenticationOk) MarshalBinary() ([]byte, error) {
-	var auth xAuthentication
-	auth.Kind = AuthKindOk
-	auth.Data = []byte{}
-
-	b, err := auth.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-
-	var msg xMessage
-	msg.Kind = KindAuthentication
-	msg.Data = b
-
-	return msg.MarshalBinary()
+	return []byte{}, nil
 }
 
 func (x *xAuthenticationOk) UnmarshalBinary(_ []byte) error {
@@ -950,8 +986,8 @@ func (x *xRowDescription) UnmarshalBinary(b []byte) error {
 type Unknown struct{}
 
 type Message struct {
-	Kind Kind
-	Data []byte
+	kind Kind
+	data []byte
 }
 
 type xMessage Message
@@ -959,9 +995,9 @@ type xMessage Message
 func (m *xMessage) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
-	writeKind(&buf, m.Kind)
-	writeInt32(&buf, int32(len(m.Data)))
-	writeBytes(&buf, m.Data)
+	writeKind(&buf, m.kind)
+	writeInt32(&buf, int32(len(m.data)))
+	writeBytes(&buf, m.data)
 
 	return buf.Bytes(), nil
 }
@@ -994,7 +1030,7 @@ func ReadMessage(r io.Reader, m *Message) error {
 		return io.ErrUnexpectedEOF
 	}
 
-	m.Kind, err = ParseKind(byteKind[0])
+	m.kind, err = ParseKind(byteKind[0])
 	if err != nil {
 		return err
 	}
@@ -1013,155 +1049,108 @@ func ReadMessage(r io.Reader, m *Message) error {
 	if bread != int(length) {
 		return io.ErrUnexpectedEOF
 	}
-	m.Data = byteBody
+	m.data = byteBody
 
 	return nil
 }
 
 func (m *Message) Parse() (any, error) {
-	switch m.Kind {
+	switch m.kind {
 	case KindAuthentication:
-		var auth xAuthentication
-		err := auth.UnmarshalBinary(m.Data)
-		if err != nil {
-			return nil, err
-		}
-
-		switch auth.Kind {
-		case AuthKindOk:
-			var x xAuthenticationOk
-			err := x.UnmarshalBinary(auth.Data)
-			return AuthenticationOk(x), err
-		case AuthKindKerberosV5:
-			var x xAuthenticationKerberosV5
-			err := x.UnmarshalBinary(auth.Data)
-			return AuthenticationKerberosV5(x), err
-		case AuthKindCleartextPassword:
-			var x xAuthenticationCleartextPassword
-			err := x.UnmarshalBinary(auth.Data)
-			return AuthenticationCleartextPassword(x), err
-		case AuthKindMD5Password:
-			var x xAuthenticationMD5Password
-			err := x.UnmarshalBinary(auth.Data)
-			return AuthenticationMD5Password(x), err
-		case AuthKindGSS:
-			var x xAuthenticationGSS
-			err := x.UnmarshalBinary(auth.Data)
-			return AuthenticationGSS(x), err
-		case AuthKindGSSContinue:
-			var x xAuthenticationGSSContinue
-			err := x.UnmarshalBinary(auth.Data)
-			return AuthenticationGSSContinue(x), err
-		case AuthKindSSPI:
-			var x xAuthenticationSSPI
-			err := x.UnmarshalBinary(auth.Data)
-			return AuthenticationSSPI(x), err
-		case AuthKindSASL:
-			var x xAuthenticationSASL
-			err := x.UnmarshalBinary(auth.Data)
-			return AuthenticationSASL(x), err
-		case AuthKindSASLContinue:
-			var x xAuthenticationSASLContinue
-			err := x.UnmarshalBinary(auth.Data)
-			return AuthenticationSASLContinue(x), err
-		case AuthKindSASLFinal:
-			var x xAuthenticationSASLFinal
-			err := x.UnmarshalBinary(auth.Data)
-			return AuthenticationSASLFinal(x), err
-		default:
-			return Unknown{}, nil
-		}
+		var x xAuthentication
+		err := x.UnmarshalBinary(m.data)
+		return Authentication(x), err
 	case KindKeyData:
 		var x xBackendKeyData
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return BackendKeyData(x), err
 	case KindBindComplete:
 		var x xBindComplete
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return BindComplete(x), err
 	case KindCloseComplete:
 		var x xCloseComplete
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return CloseComplete(x), err
 	case KindCommandComplete:
 		var x xCommandComplete
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return CommandComplete(x), err
 	case KindCopyData:
 		var x xCopyData
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return CopyData(x), err
 	case KindCopyDone:
 		var x xCopyDone
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return CopyDone(x), err
 	case KindCopyInResponse:
 		var x xCopyInResponse
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return CopyInResponse(x), err
 	case KindCopyOutResponse:
 		var x xCopyOutResponse
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return CopyOutResponse(x), err
 	case KindCopyBothResponse:
 		var x xCopyBothResponse
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return CopyBothResponse(x), err
 	case KindDataRow:
 		var x xDataRow
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return DataRow(x), err
 	case KindEmptyQueryResponse:
 		var x xEmptyQueryResponse
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return EmptyQueryResponse(x), err
 	case KindErrorResponse:
 		var x xErrorResponse
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return ErrorResponse(x), err
 	case KindFunctionCallResponse:
 		var x xFunctionCallResponse
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return FunctionCallResponse(x), err
 	case KindNegotiateProtocolVersion:
 		var x xNegotiateProtocolVersion
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return NegotiateProtocolVersion(x), err
 	case KindNoData:
 		var x xNoData
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return NoData(x), err
 	case KindNoticeResponse:
 		var x xNoticeResponse
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return NoticeResponse(x), err
 	case KindNotificationResponse:
 		var x xNotificationResponse
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return NotificationResponse(x), err
 	case KindParameterDescription:
 		var x xParameterDescription
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return ParameterDescription(x), err
 	case KindParameterStatus:
 		var x xParameterStatus
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return ParameterStatus(x), err
 	case KindParseComplete:
 		var x xParseComplete
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return ParseComplete(x), err
 	case KindPortalSuspended:
 		var x xPortalSuspended
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return PortalSuspended(x), err
 	case KindReadyForQuery:
 		var x xReadyForQuery
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return ReadyForQuery(x), err
 	case KindRowDescription:
 		var x xRowDescription
-		err := x.UnmarshalBinary(m.Data)
+		err := x.UnmarshalBinary(m.data)
 		return RowDescription(x), err
 	default:
 		return Unknown{}, nil
