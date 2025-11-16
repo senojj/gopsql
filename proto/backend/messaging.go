@@ -42,6 +42,41 @@ const (
 	KindRowDescription           Kind = 'T'
 )
 
+func ParseKind(b byte) (Kind, error) {
+	var err error
+	v := Kind(b)
+
+	switch v {
+	case KindAuthentication:
+	case KindKeyData:
+	case KindBindComplete:
+	case KindCloseComplete:
+	case KindCommandComplete:
+	case KindCopyData:
+	case KindCopyDone:
+	case KindCopyInResponse:
+	case KindCopyOutResponse:
+	case KindCopyBothResponse:
+	case KindDataRow:
+	case KindEmptyQueryResponse:
+	case KindErrorResponse:
+	case KindFunctionCallResponse:
+	case KindNegotiateProtocolVersion:
+	case KindNoData:
+	case KindNoticeResponse:
+	case KindNotificationResponse:
+	case KindParameterDescription:
+	case KindParameterStatus:
+	case KindParseComplete:
+	case KindPortalSuspended:
+	case KindReadyForQuery:
+	case KindRowDescription:
+	default:
+		err = ErrInvalidValue
+	}
+	return v, err
+}
+
 type Field byte
 
 const (
@@ -859,7 +894,7 @@ type Message struct {
 	body []byte
 }
 
-func (m *Message) Unmarshal(r io.Reader) error {
+func ReadMessage(r io.Reader, m *Message) error {
 	var byteKind [1]byte
 	var byteLength [4]byte
 
@@ -884,7 +919,10 @@ func (m *Message) Unmarshal(r io.Reader) error {
 		return ErrShortRead
 	}
 
-	m.kind = Kind(byteKind[0])
+	m.kind, err = ParseKind(byteKind[0])
+	if err != nil {
+		return err
+	}
 	length := int32(binary.BigEndian.Uint32(byteLength[:])) - 4
 
 	byteBody := make([]byte, int(length))

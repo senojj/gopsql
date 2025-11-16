@@ -152,7 +152,7 @@ func TestReadString(t *testing.T) {
 	})
 }
 
-func TestUnmarshalMessage(t *testing.T) {
+func TestReadMessage(t *testing.T) {
 	var buf bytes.Buffer
 
 	writeKind(&buf, KindAuthentication)
@@ -161,7 +161,7 @@ func TestUnmarshalMessage(t *testing.T) {
 
 	var m Message
 
-	err := m.Unmarshal(&buf)
+	err := ReadMessage(&buf, &m)
 	require.NoError(t, err)
 
 	require.Equal(t, KindAuthentication, m.kind)
