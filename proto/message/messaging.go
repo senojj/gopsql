@@ -77,6 +77,42 @@ func ParseKind(b byte) (Kind, error) {
 	return v, err
 }
 
+type AuthKind int32
+
+const (
+	AuthKindOk                AuthKind = 0
+	AuthKindKerberosV5        AuthKind = 2
+	AuthKindCleartextPassword AuthKind = 3
+	AuthKindMD5Password       AuthKind = 5
+	AuthKindGSS               AuthKind = 7
+	AuthKindGSSContinue       AuthKind = 8
+	AuthKindSSPI              AuthKind = 9
+	AuthKindSASL              AuthKind = 10
+	AuthKindSASLContinue      AuthKind = 11
+	AuthKindSASLFinal         AuthKind = 12
+)
+
+func ParseAuthKind(i int32) (AuthKind, error) {
+	var err error
+	v := AuthKind(i)
+
+	switch v {
+	case AuthKindOk:
+	case AuthKindKerberosV5:
+	case AuthKindCleartextPassword:
+	case AuthKindMD5Password:
+	case AuthKindGSS:
+	case AuthKindGSSContinue:
+	case AuthKindSSPI:
+	case AuthKindSASL:
+	case AuthKindSASLContinue:
+	case AuthKindSASLFinal:
+	default:
+		err = ErrInvalidValue
+	}
+	return v, err
+}
+
 type Field byte
 
 const (
@@ -172,16 +208,26 @@ func ParseTxStatus(b byte) (TxStatus, error) {
 }
 
 type xAuthentication struct {
-	Kind int32
+	Kind AuthKind
 	Data []byte
 }
 
+func (x *xAuthentication) MarshalBinary() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeAuthKind(&buf, x.Kind)
+	writeBytes(&buf, x.Data)
+
+	return buf.Bytes(), nil
+}
+
 func (x *xAuthentication) UnmarshalBinary(b []byte) error {
-	bread, err := readInt32(b, &x.Kind)
+	bread, err := readAuthKind(b, &x.Kind)
 	if err != nil {
 		return err
 	}
 	b = b[bread:]
+
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
 	return nil
@@ -953,43 +999,43 @@ func (m *Message) Parse() (any, error) {
 		}
 
 		switch auth.Kind {
-		case 0:
+		case AuthKindOk:
 			var x xAuthenticationOk
 			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationOk(x), err
-		case 2:
+		case AuthKindKerberosV5:
 			var x xAuthenticationKerberosV5
 			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationKerberosV5(x), err
-		case 3:
+		case AuthKindCleartextPassword:
 			var x xAuthenticationCleartextPassword
 			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationCleartextPassword(x), err
-		case 5:
+		case AuthKindMD5Password:
 			var x xAuthenticationMD5Password
 			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationMD5Password(x), err
-		case 7:
+		case AuthKindGSS:
 			var x xAuthenticationGSS
 			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationGSS(x), err
-		case 8:
+		case AuthKindGSSContinue:
 			var x xAuthenticationGSSContinue
 			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationGSSContinue(x), err
-		case 9:
+		case AuthKindSSPI:
 			var x xAuthenticationSSPI
 			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationSSPI(x), err
-		case 10:
+		case AuthKindSASL:
 			var x xAuthenticationSASL
 			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationSASL(x), err
-		case 11:
+		case AuthKindSASLContinue:
 			var x xAuthenticationSASLContinue
 			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationSASLContinue(x), err
-		case 12:
+		case AuthKindSASLFinal:
 			var x xAuthenticationSASLFinal
 			err := x.UnmarshalBinary(auth.Data)
 			return AuthenticationSASLFinal(x), err
@@ -1093,6 +1139,16 @@ func (m *Message) Parse() (any, error) {
 	}
 }
 
+func readAuthKind(b []byte, v *AuthKind) (int, error) {
+	var i int32
+	bread, err := readInt32(b, &i)
+	if err != nil {
+		return bread, err
+	}
+	*v, err = ParseAuthKind(i)
+	return bread, err
+}
+
 func readByte(b []byte, v *byte) (int, error) {
 	if len(b) < 1 {
 		return 0, ErrValueUnderflow
@@ -1134,4 +1190,53 @@ func readString(b []byte, s *string) (int, error) {
 		return ndx + 1, nil
 	}
 	return 0, ErrValueUnderflow
+}
+
+func writeField(buf *bytes.Buffer, f Field) {
+	_ = buf.WriteByte(byte(f))
+}
+
+func writeFormat(buf *bytes.Buffer, f Format) {
+	writeInt16(buf, int16(f))
+}
+
+func writeAuthKind(buf *bytes.Buffer, k AuthKind) {
+	writeInt32(buf, int32(k))
+}
+
+func writeKind(buf *bytes.Buffer, k Kind) {
+	_ = buf.WriteByte(byte(k))
+}
+
+func writeTxStatus(buf *bytes.Buffer, s TxStatus) {
+	_ = buf.WriteByte(byte(s))
+}
+
+func writeInt8(buf *bytes.Buffer, i byte) {
+	_ = buf.WriteByte(i)
+}
+
+func writeInt16(buf *bytes.Buffer, i int16) {
+	bytes := make([]byte, 2)
+	binary.BigEndian.PutUint16(bytes, uint16(i))
+
+	_, _ = buf.Write(bytes)
+}
+
+func writeInt32(buf *bytes.Buffer, i int32) {
+	bytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(bytes, uint32(i))
+
+	_, _ = buf.Write(bytes)
+}
+
+func writeString(buf *bytes.Buffer, s string) {
+	bytes := []byte(s)
+	bytes = append(bytes, 0)
+
+	_, _ = buf.Write(bytes)
+}
+
+func writeBytes(buf *bytes.Buffer, b []byte) {
+	_, _ = buf.Write(b)
 }

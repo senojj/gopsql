@@ -8,51 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func writeField(buf *bytes.Buffer, f Field) {
-	buf.WriteByte(byte(f))
-}
-
-func writeFormat(buf *bytes.Buffer, f Format) {
-	writeInt16(buf, int16(f))
-}
-
-func writeKind(buf *bytes.Buffer, k Kind) {
-	buf.WriteByte(byte(k))
-}
-
-func writeTxStatus(buf *bytes.Buffer, s TxStatus) {
-	buf.WriteByte(byte(s))
-}
-
-func writeInt8(buf *bytes.Buffer, i byte) {
-	buf.WriteByte(i)
-}
-
-func writeInt16(buf *bytes.Buffer, i int16) {
-	bytes := make([]byte, 2)
-	binary.BigEndian.PutUint16(bytes, uint16(i))
-
-	_, _ = buf.Write(bytes)
-}
-
-func writeInt32(buf *bytes.Buffer, i int32) {
-	bytes := make([]byte, 4)
-	binary.BigEndian.PutUint32(bytes, uint32(i))
-
-	_, _ = buf.Write(bytes)
-}
-
-func writeString(buf *bytes.Buffer, s string) {
-	bytes := []byte(s)
-	bytes = append(bytes, 0)
-
-	_, _ = buf.Write(bytes)
-}
-
-func writeBytes(buf *bytes.Buffer, b []byte) {
-	_, _ = buf.Write(b)
-}
-
 func as[T any](m Message, v *T) (bool, error) {
 	value, err := m.Parse()
 	if err != nil {
