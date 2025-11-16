@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	ErrShortRead     = errors.New("short read")
-	ErrValueOverflow = errors.New("value too large")
-	ErrInvalidValue  = errors.New("invalid value")
+	ErrValueUnderflow = errors.New("partial value")
+	ErrValueOverflow  = errors.New("value too large")
+	ErrInvalidValue   = errors.New("invalid value")
 )
 
 type Kind byte
@@ -301,9 +301,6 @@ type BackendKeyData struct {
 type xBackendKeyData BackendKeyData
 
 func (x *xBackendKeyData) UnmarshalBinary(b []byte) error {
-	if len(b) < 4 {
-		return ErrShortRead
-	}
 	bread, err := readInt32(b, &x.ProcessID)
 	if err != nil {
 		return err
@@ -311,7 +308,7 @@ func (x *xBackendKeyData) UnmarshalBinary(b []byte) error {
 	b = b[bread:]
 
 	if len(b) < 4 {
-		return ErrShortRead
+		return ErrValueUnderflow
 	}
 
 	if len(b) > 256 {
@@ -392,7 +389,7 @@ func (x *xCopyInResponse) UnmarshalBinary(b []byte) error {
 	b = b[bread:]
 
 	if len(b) < int(columns)*2 {
-		return ErrShortRead
+		return ErrValueUnderflow
 	}
 
 	x.Format, err = ParseFormat(int16(format))
@@ -439,7 +436,7 @@ func (x *xCopyOutResponse) UnmarshalBinary(b []byte) error {
 	b = b[bread:]
 
 	if len(b) < int(columns)*2 {
-		return ErrShortRead
+		return ErrValueUnderflow
 	}
 
 	x.Format, err = ParseFormat(int16(format))
@@ -486,7 +483,7 @@ func (x *xCopyBothResponse) UnmarshalBinary(b []byte) error {
 	b = b[bread:]
 
 	if len(b) < int(columns)*2 {
-		return ErrShortRead
+		return ErrValueUnderflow
 	}
 
 	x.Format, err = ParseFormat(int16(format))
@@ -900,23 +897,26 @@ func ReadMessage(r io.Reader, m *Message) error {
 
 	bread, err := r.Read(byteKind[:])
 	if err != nil {
+		if err == io.EOF {
+			return io.ErrUnexpectedEOF
+		}
 		return err
 	}
 
 	if bread != 1 {
-		return ErrShortRead
+		return io.ErrUnexpectedEOF
 	}
 
 	bread, err = r.Read(byteLength[:])
 	if err != nil {
 		if err == io.EOF {
-			return ErrShortRead
+			return io.ErrUnexpectedEOF
 		}
 		return err
 	}
 
 	if bread != 4 {
-		return ErrShortRead
+		return io.ErrUnexpectedEOF
 	}
 
 	m.kind, err = ParseKind(byteKind[0])
@@ -930,13 +930,13 @@ func ReadMessage(r io.Reader, m *Message) error {
 	bread, err = r.Read(byteBody)
 	if err != nil {
 		if err == io.EOF {
-			return ErrShortRead
+			return io.ErrUnexpectedEOF
 		}
 		return err
 	}
 
 	if bread != int(length) {
-		return ErrShortRead
+		return io.ErrUnexpectedEOF
 	}
 	m.body = byteBody
 
@@ -1095,7 +1095,7 @@ func (m *Message) Parse() (any, error) {
 
 func readByte(b []byte, v *byte) (int, error) {
 	if len(b) < 1 {
-		return 0, ErrShortRead
+		return 0, ErrValueUnderflow
 	}
 	*v = b[0]
 	return 1, nil
@@ -1113,7 +1113,7 @@ func readInt8(b []byte, i *int8) (int, error) {
 
 func readInt16(b []byte, i *int16) (int, error) {
 	if len(b) < 2 {
-		return 0, ErrShortRead
+		return 0, ErrValueUnderflow
 	}
 	*i = int16(binary.BigEndian.Uint16(b[:2]))
 	return 2, nil
@@ -1121,7 +1121,7 @@ func readInt16(b []byte, i *int16) (int, error) {
 
 func readInt32(b []byte, i *int32) (int, error) {
 	if len(b) < 4 {
-		return 0, ErrShortRead
+		return 0, ErrValueUnderflow
 	}
 	*i = int32(binary.BigEndian.Uint32(b[:4]))
 	return 4, nil
@@ -1133,5 +1133,5 @@ func readString(b []byte, s *string) (int, error) {
 		*s = string(b[:ndx])
 		return ndx + 1, nil
 	}
-	return 0, ErrShortRead
+	return 0, ErrValueUnderflow
 }

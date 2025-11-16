@@ -71,7 +71,7 @@ func TestReadInt8(t *testing.T) {
 
 		var first int8
 		bread, err := readInt8(b, &first)
-		require.ErrorIs(t, err, ErrShortRead)
+		require.ErrorIs(t, err, ErrValueUnderflow)
 		require.Equal(t, 0, bread)
 	})
 
@@ -126,7 +126,7 @@ func TestReadString(t *testing.T) {
 
 		var third string
 		bread, err = readString(b, &third)
-		require.ErrorIs(t, err, ErrShortRead)
+		require.ErrorIs(t, err, ErrValueUnderflow)
 		require.Equal(t, 0, bread)
 		require.Equal(t, "", third)
 	})
