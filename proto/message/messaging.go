@@ -214,7 +214,7 @@ type Authentication struct {
 
 type xAuthentication Authentication
 
-func (x *xAuthentication) MarshalBinary() ([]byte, error) {
+func (x *xAuthentication) Encode() ([]byte, error) {
 	var buf bytes.Buffer
 
 	writeAuthKind(&buf, x.kind)
@@ -223,7 +223,7 @@ func (x *xAuthentication) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (x *xAuthentication) UnmarshalBinary(b []byte) error {
+func (x *xAuthentication) Decode(b []byte) error {
 	bread, err := readAuthKind(b, &x.kind)
 	if err != nil {
 		return err
@@ -239,43 +239,43 @@ func (a *Authentication) Parse() (any, error) {
 	switch a.kind {
 	case AuthKindOk:
 		var x xAuthenticationOk
-		err := x.UnmarshalBinary(a.data)
+		err := x.Decode(a.data)
 		return AuthenticationOk(x), err
 	case AuthKindKerberosV5:
 		var x xAuthenticationKerberosV5
-		err := x.UnmarshalBinary(a.data)
+		err := x.Decode(a.data)
 		return AuthenticationKerberosV5(x), err
 	case AuthKindCleartextPassword:
 		var x xAuthenticationCleartextPassword
-		err := x.UnmarshalBinary(a.data)
+		err := x.Decode(a.data)
 		return AuthenticationCleartextPassword(x), err
 	case AuthKindMD5Password:
 		var x xAuthenticationMD5Password
-		err := x.UnmarshalBinary(a.data)
+		err := x.Decode(a.data)
 		return AuthenticationMD5Password(x), err
 	case AuthKindGSS:
 		var x xAuthenticationGSS
-		err := x.UnmarshalBinary(a.data)
+		err := x.Decode(a.data)
 		return AuthenticationGSS(x), err
 	case AuthKindGSSContinue:
 		var x xAuthenticationGSSContinue
-		err := x.UnmarshalBinary(a.data)
+		err := x.Decode(a.data)
 		return AuthenticationGSSContinue(x), err
 	case AuthKindSSPI:
 		var x xAuthenticationSSPI
-		err := x.UnmarshalBinary(a.data)
+		err := x.Decode(a.data)
 		return AuthenticationSSPI(x), err
 	case AuthKindSASL:
 		var x xAuthenticationSASL
-		err := x.UnmarshalBinary(a.data)
+		err := x.Decode(a.data)
 		return AuthenticationSASL(x), err
 	case AuthKindSASLContinue:
 		var x xAuthenticationSASLContinue
-		err := x.UnmarshalBinary(a.data)
+		err := x.Decode(a.data)
 		return AuthenticationSASLContinue(x), err
 	case AuthKindSASLFinal:
 		var x xAuthenticationSASLFinal
-		err := x.UnmarshalBinary(a.data)
+		err := x.Decode(a.data)
 		return AuthenticationSASLFinal(x), err
 	default:
 		return Unknown{}, nil
@@ -286,11 +286,11 @@ type AuthenticationOk struct{}
 
 type xAuthenticationOk AuthenticationOk
 
-func (x *xAuthenticationOk) MarshalBinary() ([]byte, error) {
+func (x *xAuthenticationOk) Encode() ([]byte, error) {
 	return []byte{}, nil
 }
 
-func (x *xAuthenticationOk) UnmarshalBinary(_ []byte) error {
+func (x *xAuthenticationOk) Decode(_ []byte) error {
 	return nil
 }
 
@@ -298,7 +298,7 @@ type AuthenticationKerberosV5 struct{}
 
 type xAuthenticationKerberosV5 AuthenticationKerberosV5
 
-func (x *xAuthenticationKerberosV5) UnmarshalBinary(_ []byte) error {
+func (x *xAuthenticationKerberosV5) Decode(_ []byte) error {
 	return nil
 }
 
@@ -306,7 +306,7 @@ type AuthenticationCleartextPassword struct{}
 
 type xAuthenticationCleartextPassword AuthenticationCleartextPassword
 
-func (x *xAuthenticationCleartextPassword) UnmarshalBinary(_ []byte) error {
+func (x *xAuthenticationCleartextPassword) Decode(_ []byte) error {
 	return nil
 }
 
@@ -316,7 +316,7 @@ type AuthenticationMD5Password struct {
 
 type xAuthenticationMD5Password AuthenticationMD5Password
 
-func (x *xAuthenticationMD5Password) UnmarshalBinary(b []byte) error {
+func (x *xAuthenticationMD5Password) Decode(b []byte) error {
 	copy(x.Salt[:], b)
 	return nil
 }
@@ -325,7 +325,7 @@ type AuthenticationGSS struct{}
 
 type xAuthenticationGSS AuthenticationGSS
 
-func (x *xAuthenticationGSS) UnmarshalBinary(_ []byte) error {
+func (x *xAuthenticationGSS) Decode(_ []byte) error {
 	return nil
 }
 
@@ -335,7 +335,7 @@ type AuthenticationGSSContinue struct {
 
 type xAuthenticationGSSContinue AuthenticationGSSContinue
 
-func (x *xAuthenticationGSSContinue) UnmarshalBinary(b []byte) error {
+func (x *xAuthenticationGSSContinue) Decode(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
 	return nil
@@ -345,7 +345,7 @@ type AuthenticationSSPI struct{}
 
 type xAuthenticationSSPI AuthenticationSSPI
 
-func (x *xAuthenticationSSPI) UnmarshalBinary(_ []byte) error {
+func (x *xAuthenticationSSPI) Decode(_ []byte) error {
 	return nil
 }
 
@@ -355,7 +355,7 @@ type AuthenticationSASL struct {
 
 type xAuthenticationSASL AuthenticationSASL
 
-func (x *xAuthenticationSASL) UnmarshalBinary(b []byte) error {
+func (x *xAuthenticationSASL) Decode(b []byte) error {
 	for len(b) > 1 {
 		var mechanism string
 		bread, err := readString(b, &mechanism)
@@ -374,7 +374,7 @@ type AuthenticationSASLContinue struct {
 
 type xAuthenticationSASLContinue AuthenticationSASLContinue
 
-func (x *xAuthenticationSASLContinue) UnmarshalBinary(b []byte) error {
+func (x *xAuthenticationSASLContinue) Decode(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
 	return nil
@@ -386,7 +386,7 @@ type AuthenticationSASLFinal struct {
 
 type xAuthenticationSASLFinal AuthenticationSASLFinal
 
-func (x *xAuthenticationSASLFinal) UnmarshalBinary(b []byte) error {
+func (x *xAuthenticationSASLFinal) Decode(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
 	return nil
@@ -399,7 +399,7 @@ type BackendKeyData struct {
 
 type xBackendKeyData BackendKeyData
 
-func (x *xBackendKeyData) UnmarshalBinary(b []byte) error {
+func (x *xBackendKeyData) Decode(b []byte) error {
 	bread, err := readInt32(b, &x.ProcessID)
 	if err != nil {
 		return err
@@ -422,7 +422,7 @@ type BindComplete struct{}
 
 type xBindComplete BindComplete
 
-func (x *xBindComplete) UnmarshalBinary(_ []byte) error {
+func (x *xBindComplete) Decode(_ []byte) error {
 	return nil
 }
 
@@ -430,7 +430,7 @@ type CloseComplete struct{}
 
 type xCloseComplete CloseComplete
 
-func (x *xCloseComplete) UnmarshalBinary(_ []byte) error {
+func (x *xCloseComplete) Decode(_ []byte) error {
 	return nil
 }
 
@@ -440,7 +440,7 @@ type CommandComplete struct {
 
 type xCommandComplete CommandComplete
 
-func (x *xCommandComplete) UnmarshalBinary(b []byte) error {
+func (x *xCommandComplete) Decode(b []byte) error {
 	_, err := readString(b, &x.Tag)
 	return err
 }
@@ -451,7 +451,7 @@ type CopyData struct {
 
 type xCopyData CopyData
 
-func (x *xCopyData) UnmarshalBinary(b []byte) error {
+func (x *xCopyData) Decode(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
 	return nil
@@ -461,7 +461,7 @@ type CopyDone struct{}
 
 type xCopyDone CopyDone
 
-func (x *xCopyDone) UnmarshalBinary(_ []byte) error {
+func (x *xCopyDone) Decode(_ []byte) error {
 	return nil
 }
 
@@ -472,7 +472,7 @@ type CopyInResponse struct {
 
 type xCopyInResponse CopyInResponse
 
-func (x *xCopyInResponse) UnmarshalBinary(b []byte) error {
+func (x *xCopyInResponse) Decode(b []byte) error {
 	var format int8
 	bread, err := readInt8(b, &format)
 	if err != nil {
@@ -519,7 +519,7 @@ type CopyOutResponse struct {
 
 type xCopyOutResponse CopyOutResponse
 
-func (x *xCopyOutResponse) UnmarshalBinary(b []byte) error {
+func (x *xCopyOutResponse) Decode(b []byte) error {
 	var format int8
 	bread, err := readInt8(b, &format)
 	if err != nil {
@@ -566,7 +566,7 @@ type CopyBothResponse struct {
 
 type xCopyBothResponse CopyBothResponse
 
-func (x *xCopyBothResponse) UnmarshalBinary(b []byte) error {
+func (x *xCopyBothResponse) Decode(b []byte) error {
 	var format int8
 	bread, err := readInt8(b, &format)
 	if err != nil {
@@ -615,7 +615,7 @@ type DataRow struct {
 
 type xDataRow DataRow
 
-func (x *xDataRow) UnmarshalBinary(b []byte) error {
+func (x *xDataRow) Decode(b []byte) error {
 	var columns int16
 	bread, err := readInt16(b, &columns)
 	if err != nil {
@@ -647,7 +647,7 @@ type EmptyQueryResponse struct{}
 
 type xEmptyQueryResponse EmptyQueryResponse
 
-func (x *xEmptyQueryResponse) UnmarshalBinary(_ []byte) error {
+func (x *xEmptyQueryResponse) Decode(_ []byte) error {
 	return nil
 }
 
@@ -658,7 +658,7 @@ type ErrorResponse struct {
 
 type xErrorResponse ErrorResponse
 
-func (x *xErrorResponse) UnmarshalBinary(b []byte) error {
+func (x *xErrorResponse) Decode(b []byte) error {
 	var f byte
 	bread, err := readByte(b, &f)
 	if err != nil {
@@ -695,7 +695,7 @@ type FunctionCallResponse struct {
 
 type xFunctionCallResponse FunctionCallResponse
 
-func (x *xFunctionCallResponse) UnmarshalBinary(b []byte) error {
+func (x *xFunctionCallResponse) Decode(b []byte) error {
 	var length int32
 	bread, err := readInt32(b, &length)
 	if err != nil {
@@ -718,7 +718,7 @@ type NegotiateProtocolVersion struct {
 
 type xNegotiateProtocolVersion NegotiateProtocolVersion
 
-func (x *xNegotiateProtocolVersion) UnmarshalBinary(b []byte) error {
+func (x *xNegotiateProtocolVersion) Decode(b []byte) error {
 	bread, err := readInt32(b, &x.MinorVersionSupported)
 	if err != nil {
 		return err
@@ -750,7 +750,7 @@ type NoData struct{}
 
 type xNoData NoData
 
-func (x *xNoData) UnmarshalBinary(_ []byte) error {
+func (x *xNoData) Decode(_ []byte) error {
 	return nil
 }
 
@@ -761,7 +761,7 @@ type NoticeResponse struct {
 
 type xNoticeResponse NoticeResponse
 
-func (x *xNoticeResponse) UnmarshalBinary(b []byte) error {
+func (x *xNoticeResponse) Decode(b []byte) error {
 	var f byte
 	bread, err := readByte(b, &f)
 	if err != nil {
@@ -799,7 +799,7 @@ type NotificationResponse struct {
 
 type xNotificationResponse NotificationResponse
 
-func (x *xNotificationResponse) UnmarshalBinary(b []byte) error {
+func (x *xNotificationResponse) Decode(b []byte) error {
 	bread, err := readInt32(b, &x.ProcessID)
 	if err != nil {
 		return err
@@ -825,7 +825,7 @@ type ParameterDescription struct {
 
 type xParameterDescription ParameterDescription
 
-func (x *xParameterDescription) UnmarshalBinary(b []byte) error {
+func (x *xParameterDescription) Decode(b []byte) error {
 	var length int16
 	bread, err := readInt16(b, &length)
 	if err != nil {
@@ -854,7 +854,7 @@ type ParameterStatus struct {
 
 type xParameterStatus ParameterStatus
 
-func (x *xParameterStatus) UnmarshalBinary(b []byte) error {
+func (x *xParameterStatus) Decode(b []byte) error {
 	bread, err := readString(b, &x.Name)
 	if err != nil {
 		return err
@@ -872,7 +872,7 @@ type ParseComplete struct{}
 
 type xParseComplete ParseComplete
 
-func (x *xParseComplete) UnmarshalBinary(_ []byte) error {
+func (x *xParseComplete) Decode(_ []byte) error {
 	return nil
 }
 
@@ -880,7 +880,7 @@ type PortalSuspended struct{}
 
 type xPortalSuspended PortalSuspended
 
-func (x *xPortalSuspended) UnmarshalBinary(_ []byte) error {
+func (x *xPortalSuspended) Decode(_ []byte) error {
 	return nil
 }
 
@@ -890,7 +890,7 @@ type ReadyForQuery struct {
 
 type xReadyForQuery ReadyForQuery
 
-func (x *xReadyForQuery) UnmarshalBinary(b []byte) error {
+func (x *xReadyForQuery) Decode(b []byte) error {
 	var status byte
 	_, err := readByte(b, &status)
 	if err != nil {
@@ -915,7 +915,7 @@ type RowDescription struct {
 
 type xRowDescription RowDescription
 
-func (x *xRowDescription) UnmarshalBinary(b []byte) error {
+func (x *xRowDescription) Decode(b []byte) error {
 	var length int16
 	bread, err := readInt16(b, &length)
 	if err != nil {
@@ -992,7 +992,7 @@ type Message struct {
 
 type xMessage Message
 
-func (m *xMessage) MarshalBinary() ([]byte, error) {
+func (m *xMessage) Encode() ([]byte, error) {
 	var buf bytes.Buffer
 
 	writeKind(&buf, m.kind)
@@ -1058,99 +1058,99 @@ func (m *Message) Parse() (any, error) {
 	switch m.kind {
 	case KindAuthentication:
 		var x xAuthentication
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return Authentication(x), err
 	case KindKeyData:
 		var x xBackendKeyData
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return BackendKeyData(x), err
 	case KindBindComplete:
 		var x xBindComplete
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return BindComplete(x), err
 	case KindCloseComplete:
 		var x xCloseComplete
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return CloseComplete(x), err
 	case KindCommandComplete:
 		var x xCommandComplete
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return CommandComplete(x), err
 	case KindCopyData:
 		var x xCopyData
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return CopyData(x), err
 	case KindCopyDone:
 		var x xCopyDone
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return CopyDone(x), err
 	case KindCopyInResponse:
 		var x xCopyInResponse
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return CopyInResponse(x), err
 	case KindCopyOutResponse:
 		var x xCopyOutResponse
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return CopyOutResponse(x), err
 	case KindCopyBothResponse:
 		var x xCopyBothResponse
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return CopyBothResponse(x), err
 	case KindDataRow:
 		var x xDataRow
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return DataRow(x), err
 	case KindEmptyQueryResponse:
 		var x xEmptyQueryResponse
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return EmptyQueryResponse(x), err
 	case KindErrorResponse:
 		var x xErrorResponse
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return ErrorResponse(x), err
 	case KindFunctionCallResponse:
 		var x xFunctionCallResponse
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return FunctionCallResponse(x), err
 	case KindNegotiateProtocolVersion:
 		var x xNegotiateProtocolVersion
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return NegotiateProtocolVersion(x), err
 	case KindNoData:
 		var x xNoData
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return NoData(x), err
 	case KindNoticeResponse:
 		var x xNoticeResponse
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return NoticeResponse(x), err
 	case KindNotificationResponse:
 		var x xNotificationResponse
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return NotificationResponse(x), err
 	case KindParameterDescription:
 		var x xParameterDescription
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return ParameterDescription(x), err
 	case KindParameterStatus:
 		var x xParameterStatus
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return ParameterStatus(x), err
 	case KindParseComplete:
 		var x xParseComplete
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return ParseComplete(x), err
 	case KindPortalSuspended:
 		var x xPortalSuspended
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return PortalSuspended(x), err
 	case KindReadyForQuery:
 		var x xReadyForQuery
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return ReadyForQuery(x), err
 	case KindRowDescription:
 		var x xRowDescription
-		err := x.UnmarshalBinary(m.data)
+		err := x.Decode(m.data)
 		return RowDescription(x), err
 	default:
 		return Unknown{}, nil
