@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func as[T any](m Message, v *T) (bool, error) {
+func as[T any](m xMessage, v *T) (bool, error) {
 	value, err := m.Parse()
 	if err != nil {
 		return false, err
@@ -114,7 +114,7 @@ func TestReadMessage(t *testing.T) {
 	writeInt32(&buf, 8)
 	writeInt32(&buf, 0)
 
-	var m Message
+	var m xMessage
 
 	err := ReadMessage(&buf, &m)
 	require.NoError(t, err)
@@ -132,7 +132,7 @@ func TestParseMessage(t *testing.T) {
 
 		writeInt32(&buf, 0)
 
-		var m Message
+		var m xMessage
 		m.kind = KindAuthentication
 		m.data = buf.Bytes()
 
@@ -148,7 +148,7 @@ func TestParseMessage(t *testing.T) {
 
 		writeInt32(&buf, 2)
 
-		var m Message
+		var m xMessage
 		m.kind = KindAuthentication
 		m.data = buf.Bytes()
 
@@ -164,7 +164,7 @@ func TestParseMessage(t *testing.T) {
 
 		writeInt32(&buf, 3)
 
-		var m Message
+		var m xMessage
 		m.kind = KindAuthentication
 		m.data = buf.Bytes()
 
@@ -181,7 +181,7 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 5)              // authentication indicator
 		writeBytes(&buf, []byte("abcd")) // salt
 
-		var m Message
+		var m xMessage
 		m.kind = KindAuthentication
 		m.data = buf.Bytes()
 
@@ -199,7 +199,7 @@ func TestParseMessage(t *testing.T) {
 
 		writeInt32(&buf, 7)
 
-		var m Message
+		var m xMessage
 		m.kind = KindAuthentication
 		m.data = buf.Bytes()
 
@@ -216,7 +216,7 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 8)
 		writeBytes(&buf, []byte("hello"))
 
-		var m Message
+		var m xMessage
 		m.kind = KindAuthentication
 		m.data = buf.Bytes()
 
@@ -234,7 +234,7 @@ func TestParseMessage(t *testing.T) {
 
 		writeInt32(&buf, 9)
 
-		var m Message
+		var m xMessage
 		m.kind = KindAuthentication
 		m.data = buf.Bytes()
 
@@ -253,7 +253,7 @@ func TestParseMessage(t *testing.T) {
 		writeString(&buf, "two")
 		writeString(&buf, "three")
 
-		var m Message
+		var m xMessage
 		m.kind = KindAuthentication
 		m.data = buf.Bytes()
 
@@ -272,7 +272,7 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 11)
 		writeBytes(&buf, []byte("hello"))
 
-		var m Message
+		var m xMessage
 		m.kind = KindAuthentication
 		m.data = buf.Bytes()
 
@@ -291,7 +291,7 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 12)
 		writeBytes(&buf, []byte("hello"))
 
-		var m Message
+		var m xMessage
 		m.kind = KindAuthentication
 		m.data = buf.Bytes()
 
@@ -310,7 +310,7 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 111)
 		writeBytes(&buf, []byte("hello"))
 
-		var m Message
+		var m xMessage
 		m.kind = KindKeyData
 		m.data = buf.Bytes()
 
@@ -325,7 +325,7 @@ func TestParseMessage(t *testing.T) {
 	})
 
 	t.Run("BindComplete", func(t *testing.T) {
-		var m Message
+		var m xMessage
 		m.kind = KindBindComplete
 		m.data = []byte{}
 
@@ -337,7 +337,7 @@ func TestParseMessage(t *testing.T) {
 	})
 
 	t.Run("CloseComplete", func(t *testing.T) {
-		var m Message
+		var m xMessage
 		m.kind = KindCloseComplete
 		m.data = []byte{}
 
@@ -353,7 +353,7 @@ func TestParseMessage(t *testing.T) {
 
 		writeString(&buf, "INSERT 11 11")
 
-		var m Message
+		var m xMessage
 		m.kind = KindCommandComplete
 		m.data = buf.Bytes()
 
@@ -371,7 +371,7 @@ func TestParseMessage(t *testing.T) {
 
 		writeBytes(&buf, []byte("hello"))
 
-		var m Message
+		var m xMessage
 		m.kind = KindCopyData
 		m.data = buf.Bytes()
 
@@ -385,7 +385,7 @@ func TestParseMessage(t *testing.T) {
 	})
 
 	t.Run("CopyDone", func(t *testing.T) {
-		var m Message
+		var m xMessage
 		m.kind = KindCopyDone
 		m.data = []byte{}
 
@@ -404,7 +404,7 @@ func TestParseMessage(t *testing.T) {
 		writeInt16(&buf, int16(FormatBinary))
 		writeInt16(&buf, int16(FormatBinary))
 
-		var m Message
+		var m xMessage
 		m.kind = KindCopyInResponse
 		m.data = buf.Bytes()
 
@@ -426,7 +426,7 @@ func TestParseMessage(t *testing.T) {
 		writeInt16(&buf, int16(FormatBinary))
 		writeInt16(&buf, int16(FormatBinary))
 
-		var m Message
+		var m xMessage
 		m.kind = KindCopyOutResponse
 		m.data = buf.Bytes()
 
@@ -448,7 +448,7 @@ func TestParseMessage(t *testing.T) {
 		writeInt16(&buf, int16(FormatBinary))
 		writeInt16(&buf, int16(FormatBinary))
 
-		var m Message
+		var m xMessage
 		m.kind = KindCopyBothResponse
 		m.data = buf.Bytes()
 
@@ -473,7 +473,7 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 5)
 		writeBytes(&buf, []byte("world"))
 
-		var m Message
+		var m xMessage
 		m.kind = KindDataRow
 		m.data = buf.Bytes()
 
@@ -492,7 +492,7 @@ func TestParseMessage(t *testing.T) {
 	})
 
 	t.Run("EmptyQueryResponse", func(t *testing.T) {
-		var m Message
+		var m xMessage
 		m.kind = KindEmptyQueryResponse
 		m.data = []byte{}
 
@@ -512,7 +512,7 @@ func TestParseMessage(t *testing.T) {
 		writeString(&buf, "hello world")
 		writeInt8(&buf, 0)
 
-		var m Message
+		var m xMessage
 		m.kind = KindErrorResponse
 		m.data = buf.Bytes()
 
@@ -532,7 +532,7 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 11)                    // length of function response data
 		writeBytes(&buf, []byte("hello world")) // function response data
 
-		var m Message
+		var m xMessage
 		m.kind = KindFunctionCallResponse
 		m.data = buf.Bytes()
 
@@ -553,7 +553,7 @@ func TestParseMessage(t *testing.T) {
 		writeString(&buf, "hello") // first unrecognized protocol
 		writeString(&buf, "world") // second unrecognized protocol
 
-		var m Message
+		var m xMessage
 		m.kind = KindNegotiateProtocolVersion
 		m.data = buf.Bytes()
 
@@ -568,7 +568,7 @@ func TestParseMessage(t *testing.T) {
 	})
 
 	t.Run("NoData", func(t *testing.T) {
-		var m Message
+		var m xMessage
 		m.kind = KindNoData
 		m.data = []byte{}
 
@@ -588,7 +588,7 @@ func TestParseMessage(t *testing.T) {
 		writeString(&buf, "hello world")
 		writeInt8(&buf, 0)
 
-		var m Message
+		var m xMessage
 		m.kind = KindNoticeResponse
 		m.data = buf.Bytes()
 
@@ -609,7 +609,7 @@ func TestParseMessage(t *testing.T) {
 		writeString(&buf, "hello")
 		writeString(&buf, "world")
 
-		var m Message
+		var m xMessage
 		m.kind = KindNotificationResponse
 		m.data = buf.Bytes()
 
@@ -631,7 +631,7 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 1)
 		writeInt32(&buf, 2)
 
-		var m Message
+		var m xMessage
 		m.kind = KindParameterDescription
 		m.data = buf.Bytes()
 
@@ -652,7 +652,7 @@ func TestParseMessage(t *testing.T) {
 		writeString(&buf, "hello")
 		writeString(&buf, "world")
 
-		var m Message
+		var m xMessage
 		m.kind = KindParameterStatus
 		m.data = buf.Bytes()
 
@@ -667,7 +667,7 @@ func TestParseMessage(t *testing.T) {
 	})
 
 	t.Run("ParseComplete", func(t *testing.T) {
-		var m Message
+		var m xMessage
 		m.kind = KindParseComplete
 		m.data = []byte{}
 
@@ -679,7 +679,7 @@ func TestParseMessage(t *testing.T) {
 	})
 
 	t.Run("PortalSuspended", func(t *testing.T) {
-		var m Message
+		var m xMessage
 		m.kind = KindPortalSuspended
 		m.data = []byte{}
 
@@ -695,7 +695,7 @@ func TestParseMessage(t *testing.T) {
 
 		writeTxStatus(&buf, TxStatusActive)
 
-		var m Message
+		var m xMessage
 		m.kind = KindReadyForQuery
 		m.data = buf.Bytes()
 
@@ -729,7 +729,7 @@ func TestParseMessage(t *testing.T) {
 		writeInt32(&buf, 205)
 		writeFormat(&buf, FormatBinary)
 
-		var m Message
+		var m xMessage
 		m.kind = KindRowDescription
 		m.data = buf.Bytes()
 

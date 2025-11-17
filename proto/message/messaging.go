@@ -218,7 +218,11 @@ func (x *xAuthentication) Encode() ([]byte, error) {
 	writeAuthKind(&buf, x.kind)
 	writeBytes(&buf, x.data)
 
-	return buf.Bytes(), nil
+	var msg xMessage
+	msg.kind = KindAuthentication
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
 }
 
 func (x *xAuthentication) Decode(b []byte) error {
@@ -233,7 +237,7 @@ func (x *xAuthentication) Decode(b []byte) error {
 	return nil
 }
 
-func (a *Authentication) Parse() (any, error) {
+func (a *xAuthentication) Parse() (any, error) {
 	switch a.kind {
 	case AuthKindOk:
 		var x xAuthenticationOk
@@ -285,15 +289,11 @@ type AuthenticationOk struct{}
 type xAuthenticationOk AuthenticationOk
 
 func (x *xAuthenticationOk) Encode() ([]byte, error) {
-	var buf bytes.Buffer
+	var auth xAuthentication
+	auth.kind = AuthKindOk
+	auth.data = []byte{}
 
-	writeAuthKind(&buf, AuthKindOk)
-
-	var msg xMessage
-	msg.kind = KindAuthentication
-	msg.data = buf.Bytes()
-
-	return msg.Encode()
+	return auth.Encode()
 }
 
 func (x *xAuthenticationOk) Decode(_ []byte) error {
@@ -304,6 +304,14 @@ type AuthenticationKerberosV5 struct{}
 
 type xAuthenticationKerberosV5 AuthenticationKerberosV5
 
+func (x *xAuthenticationKerberosV5) Encode() ([]byte, error) {
+	var auth xAuthentication
+	auth.kind = AuthKindKerberosV5
+	auth.data = []byte{}
+
+	return auth.Encode()
+}
+
 func (x *xAuthenticationKerberosV5) Decode(_ []byte) error {
 	return nil
 }
@@ -311,6 +319,14 @@ func (x *xAuthenticationKerberosV5) Decode(_ []byte) error {
 type AuthenticationCleartextPassword struct{}
 
 type xAuthenticationCleartextPassword AuthenticationCleartextPassword
+
+func (x *xAuthenticationCleartextPassword) Encode() ([]byte, error) {
+	var auth xAuthentication
+	auth.kind = AuthKindCleartextPassword
+	auth.data = []byte{}
+
+	return auth.Encode()
+}
 
 func (x *xAuthenticationCleartextPassword) Decode(_ []byte) error {
 	return nil
@@ -322,6 +338,18 @@ type AuthenticationMD5Password struct {
 
 type xAuthenticationMD5Password AuthenticationMD5Password
 
+func (x *xAuthenticationMD5Password) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeBytes(&buf, x.Salt[:])
+
+	var auth xAuthentication
+	auth.kind = AuthKindMD5Password
+	auth.data = buf.Bytes()
+
+	return auth.Encode()
+}
+
 func (x *xAuthenticationMD5Password) Decode(b []byte) error {
 	copy(x.Salt[:], b)
 	return nil
@@ -330,6 +358,14 @@ func (x *xAuthenticationMD5Password) Decode(b []byte) error {
 type AuthenticationGSS struct{}
 
 type xAuthenticationGSS AuthenticationGSS
+
+func (x *xAuthenticationGSS) Encode() ([]byte, error) {
+	var auth xAuthentication
+	auth.kind = AuthKindGSS
+	auth.data = []byte{}
+
+	return auth.Encode()
+}
 
 func (x *xAuthenticationGSS) Decode(_ []byte) error {
 	return nil
@@ -340,6 +376,18 @@ type AuthenticationGSSContinue struct {
 }
 
 type xAuthenticationGSSContinue AuthenticationGSSContinue
+
+func (x *xAuthenticationGSSContinue) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeBytes(&buf, x.Data)
+
+	var auth xAuthentication
+	auth.kind = AuthKindGSSContinue
+	auth.data = buf.Bytes()
+
+	return auth.Encode()
+}
 
 func (x *xAuthenticationGSSContinue) Decode(b []byte) error {
 	x.Data = make([]byte, len(b))
@@ -1006,7 +1054,7 @@ func (m *xMessage) Encode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func ReadMessage(r io.Reader, m *Message) error {
+func ReadMessage(r io.Reader, m *xMessage) error {
 	var byteKind [1]byte
 	var byteLength [4]byte
 
@@ -1058,12 +1106,15 @@ func ReadMessage(r io.Reader, m *Message) error {
 	return nil
 }
 
-func (m *Message) Parse() (any, error) {
+func (m *xMessage) Parse() (any, error) {
 	switch m.kind {
 	case KindAuthentication:
 		var x xAuthentication
 		err := x.Decode(m.data)
-		return Authentication(x), err
+		if err != nil {
+			return nil, err
+		}
+		return x.Parse()
 	case KindKeyData:
 		var x xBackendKeyData
 		err := x.Decode(m.data)
