@@ -207,12 +207,10 @@ func ParseTxStatus(b byte) (TxStatus, error) {
 	return v, err
 }
 
-type Authentication struct {
+type xAuthentication struct {
 	kind AuthKind
 	data []byte
 }
-
-type xAuthentication Authentication
 
 func (x *xAuthentication) Encode() ([]byte, error) {
 	var buf bytes.Buffer
@@ -287,7 +285,15 @@ type AuthenticationOk struct{}
 type xAuthenticationOk AuthenticationOk
 
 func (x *xAuthenticationOk) Encode() ([]byte, error) {
-	return []byte{}, nil
+	var buf bytes.Buffer
+
+	writeAuthKind(&buf, AuthKindOk)
+
+	var msg xMessage
+	msg.kind = KindAuthentication
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
 }
 
 func (x *xAuthenticationOk) Decode(_ []byte) error {
@@ -985,12 +991,10 @@ func (x *xRowDescription) Decode(b []byte) error {
 
 type Unknown struct{}
 
-type Message struct {
+type xMessage struct {
 	kind Kind
 	data []byte
 }
-
-type xMessage Message
 
 func (m *xMessage) Encode() ([]byte, error) {
 	var buf bytes.Buffer
