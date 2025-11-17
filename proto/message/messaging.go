@@ -399,6 +399,14 @@ type AuthenticationSSPI struct{}
 
 type xAuthenticationSSPI AuthenticationSSPI
 
+func (x *xAuthenticationSSPI) Encode() ([]byte, error) {
+	var auth xAuthentication
+	auth.kind = AuthKindSSPI
+	auth.data = []byte{}
+
+	return auth.Encode()
+}
+
 func (x *xAuthenticationSSPI) Decode(_ []byte) error {
 	return nil
 }
@@ -408,6 +416,20 @@ type AuthenticationSASL struct {
 }
 
 type xAuthenticationSASL AuthenticationSASL
+
+func (x *xAuthenticationSASL) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	for i := range len(x.Mechanisms) {
+		writeString(&buf, x.Mechanisms[i])
+	}
+
+	var auth xAuthentication
+	auth.kind = AuthKindSASL
+	auth.data = buf.Bytes()
+
+	return auth.Encode()
+}
 
 func (x *xAuthenticationSASL) Decode(b []byte) error {
 	for len(b) > 1 {
@@ -427,6 +449,18 @@ type AuthenticationSASLContinue struct {
 }
 
 type xAuthenticationSASLContinue AuthenticationSASLContinue
+
+func (x *xAuthenticationSASLContinue) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeBytes(&buf, x.Data)
+
+	var auth xAuthentication
+	auth.kind = AuthKindSASLContinue
+	auth.data = buf.Bytes()
+
+	return auth.Encode()
+}
 
 func (x *xAuthenticationSASLContinue) Decode(b []byte) error {
 	x.Data = make([]byte, len(b))
