@@ -474,6 +474,18 @@ type AuthenticationSASLFinal struct {
 
 type xAuthenticationSASLFinal AuthenticationSASLFinal
 
+func (x *xAuthenticationSASLFinal) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeBytes(&buf, x.Data)
+
+	var auth xAuthentication
+	auth.kind = AuthKindSASLFinal
+	auth.data = buf.Bytes()
+
+	return auth.Encode()
+}
+
 func (x *xAuthenticationSASLFinal) Decode(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
@@ -486,6 +498,19 @@ type BackendKeyData struct {
 }
 
 type xBackendKeyData BackendKeyData
+
+func (x *xBackendKeyData) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeInt32(&buf, x.ProcessID)
+	writeBytes(&buf, x.SecretKey)
+
+	var msg xMessage
+	msg.kind = KindKeyData
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
 
 func (x *xBackendKeyData) Decode(b []byte) error {
 	bread, err := readInt32(b, &x.ProcessID)
@@ -510,6 +535,14 @@ type BindComplete struct{}
 
 type xBindComplete BindComplete
 
+func (x *xBindComplete) Encode() ([]byte, error) {
+	var msg xMessage
+	msg.kind = KindBindComplete
+	msg.data = []byte{}
+
+	return msg.Encode()
+}
+
 func (x *xBindComplete) Decode(_ []byte) error {
 	return nil
 }
@@ -517,6 +550,14 @@ func (x *xBindComplete) Decode(_ []byte) error {
 type CloseComplete struct{}
 
 type xCloseComplete CloseComplete
+
+func (x *xCloseComplete) Encode() ([]byte, error) {
+	var msg xMessage
+	msg.kind = KindCloseComplete
+	msg.data = []byte{}
+
+	return msg.Encode()
+}
 
 func (x *xCloseComplete) Decode(_ []byte) error {
 	return nil
@@ -527,6 +568,18 @@ type CommandComplete struct {
 }
 
 type xCommandComplete CommandComplete
+
+func (x *xCommandComplete) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeString(&buf, x.Tag)
+
+	var msg xMessage
+	msg.kind = KindCommandComplete
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
 
 func (x *xCommandComplete) Decode(b []byte) error {
 	_, err := readString(b, &x.Tag)
@@ -539,6 +592,18 @@ type CopyData struct {
 
 type xCopyData CopyData
 
+func (x *xCopyData) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeBytes(&buf, x.Data)
+
+	var msg xMessage
+	msg.kind = KindCopyData
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
+
 func (x *xCopyData) Decode(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
@@ -548,6 +613,14 @@ func (x *xCopyData) Decode(b []byte) error {
 type CopyDone struct{}
 
 type xCopyDone CopyDone
+
+func (x *xCopyDone) Encode() ([]byte, error) {
+	var msg xMessage
+	msg.kind = KindCopyDone
+	msg.data = []byte{}
+
+	return msg.Encode()
+}
 
 func (x *xCopyDone) Decode(_ []byte) error {
 	return nil
@@ -559,6 +632,22 @@ type CopyInResponse struct {
 }
 
 type xCopyInResponse CopyInResponse
+
+func (x *xCopyInResponse) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeFormat(&buf, x.Format)
+	writeInt16(&buf, int16(len(x.Columns)))
+	for _, f := range x.Columns {
+		writeFormat(&buf, f)
+	}
+
+	var msg xMessage
+	msg.kind = KindCopyInResponse
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
 
 func (x *xCopyInResponse) Decode(b []byte) error {
 	var format int8
@@ -607,6 +696,22 @@ type CopyOutResponse struct {
 
 type xCopyOutResponse CopyOutResponse
 
+func (x *xCopyOutResponse) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeFormat(&buf, x.Format)
+	writeInt16(&buf, int16(len(x.Columns)))
+	for _, f := range x.Columns {
+		writeFormat(&buf, f)
+	}
+
+	var msg xMessage
+	msg.kind = KindCopyOutResponse
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
+
 func (x *xCopyOutResponse) Decode(b []byte) error {
 	var format int8
 	bread, err := readInt8(b, &format)
@@ -653,6 +758,22 @@ type CopyBothResponse struct {
 }
 
 type xCopyBothResponse CopyBothResponse
+
+func (x *xCopyBothResponse) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeFormat(&buf, x.Format)
+	writeInt16(&buf, int16(len(x.Columns)))
+	for _, f := range x.Columns {
+		writeFormat(&buf, f)
+	}
+
+	var msg xMessage
+	msg.kind = KindCopyBothResponse
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
 
 func (x *xCopyBothResponse) Decode(b []byte) error {
 	var format int8
@@ -703,6 +824,22 @@ type DataRow struct {
 
 type xDataRow DataRow
 
+func (x *xDataRow) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeInt16(&buf, int16(len(x.Columns)))
+	for _, column := range x.Columns {
+		writeInt32(&buf, int32(len(column)))
+		writeBytes(&buf, column)
+	}
+
+	var msg xMessage
+	msg.kind = KindDataRow
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
+
 func (x *xDataRow) Decode(b []byte) error {
 	var columns int16
 	bread, err := readInt16(b, &columns)
@@ -735,6 +872,14 @@ type EmptyQueryResponse struct{}
 
 type xEmptyQueryResponse EmptyQueryResponse
 
+func (x *xEmptyQueryResponse) Encode() ([]byte, error) {
+	var msg xMessage
+	msg.kind = KindEmptyQueryResponse
+	msg.data = []byte{}
+
+	return msg.Encode()
+}
+
 func (x *xEmptyQueryResponse) Decode(_ []byte) error {
 	return nil
 }
@@ -745,6 +890,21 @@ type ErrorResponse struct {
 }
 
 type xErrorResponse ErrorResponse
+
+func (x *xErrorResponse) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	for i := range len(x.Fields) {
+		writeField(&buf, x.Fields[i])
+		writeString(&buf, x.Values[i])
+	}
+
+	var msg xMessage
+	msg.kind = KindErrorResponse
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
 
 func (x *xErrorResponse) Decode(b []byte) error {
 	var f byte
@@ -782,6 +942,18 @@ type FunctionCallResponse struct {
 }
 
 type xFunctionCallResponse FunctionCallResponse
+
+func (x *xFunctionCallResponse) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeBytes(&buf, x.Result)
+
+	var msg xMessage
+	msg.kind = KindFunctionCallResponse
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
 
 func (x *xFunctionCallResponse) Decode(b []byte) error {
 	var length int32
