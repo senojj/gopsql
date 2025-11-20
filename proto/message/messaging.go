@@ -898,6 +898,7 @@ func (x *xErrorResponse) Encode() ([]byte, error) {
 		writeField(&buf, x.Fields[i])
 		writeString(&buf, x.Values[i])
 	}
+	writeInt8(&buf, 0)
 
 	var msg xMessage
 	msg.kind = KindErrorResponse
@@ -978,6 +979,22 @@ type NegotiateProtocolVersion struct {
 
 type xNegotiateProtocolVersion NegotiateProtocolVersion
 
+func (x *xNegotiateProtocolVersion) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeInt32(&buf, x.MinorVersionSupported)
+	writeInt32(&buf, int32(len(x.UnrecognizedOptions)))
+	for _, option := range x.UnrecognizedOptions {
+		writeString(&buf, option)
+	}
+
+	var msg xMessage
+	msg.kind = KindNegotiateProtocolVersion
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
+
 func (x *xNegotiateProtocolVersion) Decode(b []byte) error {
 	bread, err := readInt32(b, &x.MinorVersionSupported)
 	if err != nil {
@@ -1010,6 +1027,14 @@ type NoData struct{}
 
 type xNoData NoData
 
+func (x *xNoData) Encode() ([]byte, error) {
+	var msg xMessage
+	msg.kind = KindNoData
+	msg.data = []byte{}
+
+	return msg.Encode()
+}
+
 func (x *xNoData) Decode(_ []byte) error {
 	return nil
 }
@@ -1020,6 +1045,22 @@ type NoticeResponse struct {
 }
 
 type xNoticeResponse NoticeResponse
+
+func (x *xNoticeResponse) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	for i := range len(x.Fields) {
+		writeField(&buf, x.Fields[i])
+		writeString(&buf, x.Values[i])
+	}
+	writeInt8(&buf, 0)
+
+	var msg xMessage
+	msg.kind = KindNoticeResponse
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
 
 func (x *xNoticeResponse) Decode(b []byte) error {
 	var f byte
@@ -1059,6 +1100,20 @@ type NotificationResponse struct {
 
 type xNotificationResponse NotificationResponse
 
+func (x *xNotificationResponse) Encdoe() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeInt32(&buf, x.ProcessID)
+	writeString(&buf, x.Channel)
+	writeString(&buf, x.Payload)
+
+	var msg xMessage
+	msg.kind = KindNotificationResponse
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
+
 func (x *xNotificationResponse) Decode(b []byte) error {
 	bread, err := readInt32(b, &x.ProcessID)
 	if err != nil {
@@ -1084,6 +1139,21 @@ type ParameterDescription struct {
 }
 
 type xParameterDescription ParameterDescription
+
+func (x *xParameterDescription) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeInt16(&buf, int16(len(x.Parameters)))
+	for _, param := range x.Parameters {
+		writeInt32(&buf, param)
+	}
+
+	var msg xMessage
+	msg.kind = KindParameterDescription
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
 
 func (x *xParameterDescription) Decode(b []byte) error {
 	var length int16
@@ -1114,6 +1184,19 @@ type ParameterStatus struct {
 
 type xParameterStatus ParameterStatus
 
+func (x *xParameterStatus) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeString(&buf, x.Name)
+	writeString(&buf, x.Value)
+
+	var msg xMessage
+	msg.kind = KindParameterStatus
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
+
 func (x *xParameterStatus) Decode(b []byte) error {
 	bread, err := readString(b, &x.Name)
 	if err != nil {
@@ -1132,6 +1215,14 @@ type ParseComplete struct{}
 
 type xParseComplete ParseComplete
 
+func (x *xParseComplete) Encode() ([]byte, error) {
+	var msg xMessage
+	msg.kind = KindParseComplete
+	msg.data = []byte{}
+
+	return msg.Encode()
+}
+
 func (x *xParseComplete) Decode(_ []byte) error {
 	return nil
 }
@@ -1139,6 +1230,14 @@ func (x *xParseComplete) Decode(_ []byte) error {
 type PortalSuspended struct{}
 
 type xPortalSuspended PortalSuspended
+
+func (x *xPortalSuspended) Encode() ([]byte, error) {
+	var msg xMessage
+	msg.kind = KindPortalSuspended
+	msg.data = []byte{}
+
+	return msg.Encode()
+}
 
 func (x *xPortalSuspended) Decode(_ []byte) error {
 	return nil
@@ -1149,6 +1248,18 @@ type ReadyForQuery struct {
 }
 
 type xReadyForQuery ReadyForQuery
+
+func (x *xReadyForQuery) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeTxStatus(&buf, x.TxStatus)
+
+	var msg xMessage
+	msg.kind = KindReadyForQuery
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
 
 func (x *xReadyForQuery) Decode(b []byte) error {
 	var status byte
@@ -1174,6 +1285,27 @@ type RowDescription struct {
 }
 
 type xRowDescription RowDescription
+
+func (x *xRowDescription) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+
+	writeInt16(&buf, int16(len(x.Names)))
+	for i := range len(x.Names) {
+		writeString(&buf, x.Names[i])
+		writeInt32(&buf, x.Tables[i])
+		writeInt16(&buf, x.Columns[i])
+		writeInt32(&buf, x.DataTypes[i])
+		writeInt16(&buf, x.Sizes[i])
+		writeInt32(&buf, x.Modifiers[i])
+		writeFormat(&buf, x.Formats[i])
+	}
+
+	var msg xMessage
+	msg.kind = KindRowDescription
+	msg.data = buf.Bytes()
+
+	return msg.Encode()
+}
 
 func (x *xRowDescription) Decode(b []byte) error {
 	var length int16
