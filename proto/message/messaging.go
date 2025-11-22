@@ -1516,58 +1516,6 @@ func (m *xMessage) Encode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func ReadMessage(r io.Reader, m *xMessage) error {
-	var byteKind [1]byte
-	var byteLength [4]byte
-
-	bread, err := r.Read(byteKind[:])
-	if err != nil {
-		if err == io.EOF {
-			return io.ErrUnexpectedEOF
-		}
-		return err
-	}
-
-	if bread != 1 {
-		return io.ErrUnexpectedEOF
-	}
-
-	bread, err = r.Read(byteLength[:])
-	if err != nil {
-		if err == io.EOF {
-			return io.ErrUnexpectedEOF
-		}
-		return err
-	}
-
-	if bread != 4 {
-		return io.ErrUnexpectedEOF
-	}
-
-	m.kind, err = ParseKind(byteKind[0])
-	if err != nil {
-		return err
-	}
-	length := int32(binary.BigEndian.Uint32(byteLength[:])) - 4
-
-	byteBody := make([]byte, int(length))
-
-	bread, err = r.Read(byteBody)
-	if err != nil {
-		if err == io.EOF {
-			return io.ErrUnexpectedEOF
-		}
-		return err
-	}
-
-	if bread != int(length) {
-		return io.ErrUnexpectedEOF
-	}
-	m.data = byteBody
-
-	return nil
-}
-
 func (m *xMessage) Parse() (any, error) {
 	switch m.kind {
 	case KindAuthentication:
