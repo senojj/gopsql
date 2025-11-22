@@ -207,6 +207,130 @@ func ParseTxStatus(b byte) (TxStatus, error) {
 	return v, err
 }
 
+func Read(r io.Reader) (any, error) {
+	var header [5]byte
+
+	_, err := io.ReadFull(r, header[:])
+	if err != nil {
+		if err == io.EOF {
+			return nil, io.ErrUnexpectedEOF
+		}
+		return nil, err
+	}
+
+	kind, err := ParseKind(header[0])
+	if err != nil {
+		return nil, ErrInvalidValue
+	}
+
+	var length int32
+	_, err = readInt32(header[1:], &length)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := make([]byte, length)
+	_, err = io.ReadFull(r, payload)
+	if err != nil {
+		if err == io.EOF {
+			return nil, io.ErrUnexpectedEOF
+		}
+		return nil, err
+	}
+
+	var msg xMessage
+	msg.kind = kind
+	msg.data = payload
+
+	return msg.Parse()
+}
+
+func Write(w io.Writer, m any) error {
+	var enc encoder
+
+	switch v := m.(type) {
+	case *AuthenticationOk:
+		enc = (*xAuthenticationOk)(v)
+	case *AuthenticationKerberosV5:
+		enc = (*xAuthenticationKerberosV5)(v)
+	case *AuthenticationCleartextPassword:
+		enc = (*xAuthenticationCleartextPassword)(v)
+	case *AuthenticationMD5Password:
+		enc = (*xAuthenticationMD5Password)(v)
+	case *AuthenticationGSS:
+		enc = (*xAuthenticationGSS)(v)
+	case *AuthenticationGSSContinue:
+		enc = (*xAuthenticationGSSContinue)(v)
+	case *AuthenticationSSPI:
+		enc = (*xAuthenticationSSPI)(v)
+	case *AuthenticationSASL:
+		enc = (*xAuthenticationSASL)(v)
+	case *AuthenticationSASLContinue:
+		enc = (*xAuthenticationSASLContinue)(v)
+	case *AuthenticationSASLFinal:
+		enc = (*xAuthenticationSASLFinal)(v)
+	case *BackendKeyData:
+		enc = (*xBackendKeyData)(v)
+	case *BindComplete:
+		enc = (*xBindComplete)(v)
+	case *CloseComplete:
+		enc = (*xCloseComplete)(v)
+	case *CommandComplete:
+		enc = (*xCommandComplete)(v)
+	case *CopyData:
+		enc = (*xCopyData)(v)
+	case *CopyDone:
+		enc = (*xCopyDone)(v)
+	case *CopyInResponse:
+		enc = (*xCopyInResponse)(v)
+	case *CopyOutResponse:
+		enc = (*xCopyOutResponse)(v)
+	case *CopyBothResponse:
+		enc = (*xCopyBothResponse)(v)
+	case *DataRow:
+		enc = (*xDataRow)(v)
+	case *EmptyQueryResponse:
+		enc = (*xEmptyQueryResponse)(v)
+	case *ErrorResponse:
+		enc = (*xErrorResponse)(v)
+	case *FunctionCallResponse:
+		enc = (*xFunctionCallResponse)(v)
+	case *NegotiateProtocolVersion:
+		enc = (*xNegotiateProtocolVersion)(v)
+	case *NoData:
+		enc = (*xNoData)(v)
+	case *NoticeResponse:
+		enc = (*xNoticeResponse)(v)
+	case *NotificationResponse:
+		enc = (*xNotificationResponse)(v)
+	case *ParameterDescription:
+		enc = (*xParameterDescription)(v)
+	case *ParameterStatus:
+		enc = (*xParameterStatus)(v)
+	case *ParseComplete:
+		enc = (*xParseComplete)(v)
+	case *PortalSuspended:
+		enc = (*xPortalSuspended)(v)
+	case *ReadyForQuery:
+		enc = (*xReadyForQuery)(v)
+	case *RowDescription:
+		enc = (*xRowDescription)(v)
+	default:
+		return ErrInvalidValue
+	}
+
+	b, err := enc.Encode()
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(b)
+	return err
+}
+
+type encoder interface {
+	Encode() ([]byte, error)
+}
+
 type xAuthentication struct {
 	kind AuthKind
 	data []byte
@@ -1100,7 +1224,7 @@ type NotificationResponse struct {
 
 type xNotificationResponse NotificationResponse
 
-func (x *xNotificationResponse) Encdoe() ([]byte, error) {
+func (x *xNotificationResponse) Encode() ([]byte, error) {
 	var buf bytes.Buffer
 
 	writeInt32(&buf, x.ProcessID)

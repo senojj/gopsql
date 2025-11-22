@@ -127,7 +127,22 @@ func TestReadMessage(t *testing.T) {
 }
 
 func TestParseMessage(t *testing.T) {
-	t.Run("AuthenticationOk", func(t *testing.T) {
+	t.Run("EncodeAuthenticationOk", func(t *testing.T) {
+		var expected bytes.Buffer
+
+		writeKind(&expected, KindAuthentication)
+		writeInt32(&expected, 8)
+		writeInt32(&expected, 0)
+
+		var msg AuthenticationOk
+
+		var buf bytes.Buffer
+		Write(&buf, msg)
+
+		require.Equal(t, expected.Bytes(), buf.Bytes())
+	})
+
+	t.Run("DecodeAuthenticationOk", func(t *testing.T) {
 		var buf bytes.Buffer
 
 		writeInt32(&buf, 0)
