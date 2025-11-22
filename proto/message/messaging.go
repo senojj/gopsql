@@ -1510,7 +1510,7 @@ func (m *xMessage) Encode() ([]byte, error) {
 	var buf bytes.Buffer
 
 	writeKind(&buf, m.kind)
-	writeInt32(&buf, int32(len(m.data)))
+	writeInt32(&buf, int32(len(m.data))+4)
 	writeBytes(&buf, m.data)
 
 	return buf.Bytes(), nil

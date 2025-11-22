@@ -137,7 +137,8 @@ func TestParseMessage(t *testing.T) {
 		var msg AuthenticationOk
 
 		var buf bytes.Buffer
-		Write(&buf, msg)
+		err := Write(&buf, &msg)
+		require.NoError(t, err)
 
 		require.Equal(t, expected.Bytes(), buf.Bytes())
 	})
