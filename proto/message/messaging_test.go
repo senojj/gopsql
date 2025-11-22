@@ -2,7 +2,6 @@ package backend
 
 import (
 	"bytes"
-	"encoding/binary"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -107,27 +106,8 @@ func TestReadString(t *testing.T) {
 	})
 }
 
-func TestReadMessage(t *testing.T) {
-	var buf bytes.Buffer
-
-	writeKind(&buf, KindAuthentication)
-	writeInt32(&buf, 8)
-	writeInt32(&buf, 0)
-
-	var m xMessage
-
-	err := ReadMessage(&buf, &m)
-	require.NoError(t, err)
-
-	require.Equal(t, KindAuthentication, m.kind)
-
-	expected := make([]byte, 4)
-	binary.BigEndian.PutUint32(expected, 0)
-	require.Equal(t, expected, m.data)
-}
-
-func TestParseMessage(t *testing.T) {
-	t.Run("EncodeAuthenticationOk", func(t *testing.T) {
+func TestMessage(t *testing.T) {
+	t.Run("WriteAuthenticationOk", func(t *testing.T) {
 		var expected bytes.Buffer
 
 		writeKind(&expected, KindAuthentication)
@@ -143,20 +123,22 @@ func TestParseMessage(t *testing.T) {
 		require.Equal(t, expected.Bytes(), buf.Bytes())
 	})
 
-	t.Run("DecodeAuthenticationOk", func(t *testing.T) {
+	t.Run("ReadAuthenticationOk", func(t *testing.T) {
 		var buf bytes.Buffer
 
+		writeKind(&buf, KindAuthentication)
+		writeInt32(&buf, 8)
 		writeInt32(&buf, 0)
 
-		var m xMessage
-		m.kind = KindAuthentication
-		m.data = buf.Bytes()
-
-		var result AuthenticationOk
-
-		ok, err := as(m, &result)
+		value, err := Read(&buf)
 		require.NoError(t, err)
+
+		m, ok := value.(AuthenticationOk)
 		require.True(t, ok)
+
+		var expected AuthenticationOk
+
+		require.Equal(t, expected, m)
 	})
 
 	t.Run("AuthenticationKerberosV5", func(t *testing.T) {

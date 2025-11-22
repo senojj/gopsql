@@ -229,7 +229,7 @@ func Read(r io.Reader) (any, error) {
 		return nil, err
 	}
 
-	payload := make([]byte, length)
+	payload := make([]byte, length-4)
 	_, err = io.ReadFull(r, payload)
 	if err != nil {
 		if err == io.EOF {
