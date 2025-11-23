@@ -107,89 +107,123 @@ func TestReadString(t *testing.T) {
 }
 
 func TestMessage(t *testing.T) {
-	t.Run("WriteAuthenticationOk", func(t *testing.T) {
-		var expected bytes.Buffer
+	t.Run("AuthenticationOk", func(t *testing.T) {
+		var data bytes.Buffer
+		writeKind(&data, KindAuthentication)
+		writeInt32(&data, 8)
+		writeInt32(&data, 0)
 
-		writeKind(&expected, KindAuthentication)
-		writeInt32(&expected, 8)
-		writeInt32(&expected, 0)
+		t.Run("Write", func(t *testing.T) {
+			var msg AuthenticationOk
 
-		var msg AuthenticationOk
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var buf bytes.Buffer
-		err := Write(&buf, &msg)
-		require.NoError(t, err)
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		require.Equal(t, expected.Bytes(), buf.Bytes())
-	})
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-	t.Run("ReadAuthenticationOk", func(t *testing.T) {
-		var buf bytes.Buffer
+			m, ok := value.(AuthenticationOk)
+			require.True(t, ok)
 
-		writeKind(&buf, KindAuthentication)
-		writeInt32(&buf, 8)
-		writeInt32(&buf, 0)
+			var expected AuthenticationOk
 
-		value, err := Read(&buf)
-		require.NoError(t, err)
-
-		m, ok := value.(AuthenticationOk)
-		require.True(t, ok)
-
-		var expected AuthenticationOk
-
-		require.Equal(t, expected, m)
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("AuthenticationKerberosV5", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeKind(&data, KindAuthentication)
+		writeInt32(&data, 8)
+		writeInt32(&data, 2)
 
-		writeInt32(&buf, 2)
+		t.Run("Write", func(t *testing.T) {
+			var msg AuthenticationKerberosV5
 
-		var m xMessage
-		m.kind = KindAuthentication
-		m.data = buf.Bytes()
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result AuthenticationKerberosV5
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(AuthenticationKerberosV5)
+			require.True(t, ok)
+
+			var expected AuthenticationKerberosV5
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("AuthenticationCleartextPassword", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeKind(&data, KindAuthentication)
+		writeInt32(&data, 8)
+		writeInt32(&data, 3)
 
-		writeInt32(&buf, 3)
+		t.Run("Write", func(t *testing.T) {
+			var msg AuthenticationCleartextPassword
 
-		var m xMessage
-		m.kind = KindAuthentication
-		m.data = buf.Bytes()
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result AuthenticationCleartextPassword
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(AuthenticationCleartextPassword)
+			require.True(t, ok)
+
+			var expected AuthenticationCleartextPassword
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("AuthenticationMD5Password", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeKind(&data, KindAuthentication)
+		writeInt32(&data, 12)
+		writeInt32(&data, 5)
+		writeBytes(&data, []byte("abcd"))
 
-		writeInt32(&buf, 5)              // authentication indicator
-		writeBytes(&buf, []byte("abcd")) // salt
+		t.Run("Write", func(t *testing.T) {
+			var msg AuthenticationMD5Password
+			msg.Salt = [4]byte{'a', 'b', 'c', 'd'}
 
-		var m xMessage
-		m.kind = KindAuthentication
-		m.data = buf.Bytes()
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result AuthenticationMD5Password
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, [4]byte{'a', 'b', 'c', 'd'}, result.Salt)
+			m, ok := value.(AuthenticationMD5Password)
+			require.True(t, ok)
+
+			var expected AuthenticationMD5Password
+			expected.Salt = [4]byte{'a', 'b', 'c', 'd'}
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("AuthenticationGSS", func(t *testing.T) {
