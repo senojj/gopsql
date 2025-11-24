@@ -7,18 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func as[T any](m xMessage, v *T) (bool, error) {
-	value, err := m.Parse()
-	if err != nil {
-		return false, err
-	}
-
-	var ok bool
-	*v, ok = value.(T)
-
-	return ok, nil
-}
-
 func TestReadInt8(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		b := []byte{}
@@ -109,9 +97,9 @@ func TestReadString(t *testing.T) {
 func TestMessage(t *testing.T) {
 	t.Run("AuthenticationOk", func(t *testing.T) {
 		var data bytes.Buffer
-		writeKind(&data, KindAuthentication)
+		writeByte(&data, msgKindAuthentication)
 		writeInt32(&data, 8)
-		writeInt32(&data, 0)
+		writeInt32(&data, authKindOk)
 
 		t.Run("Write", func(t *testing.T) {
 			var msg AuthenticationOk
@@ -138,9 +126,9 @@ func TestMessage(t *testing.T) {
 
 	t.Run("AuthenticationKerberosV5", func(t *testing.T) {
 		var data bytes.Buffer
-		writeKind(&data, KindAuthentication)
+		writeByte(&data, msgKindAuthentication)
 		writeInt32(&data, 8)
-		writeInt32(&data, 2)
+		writeInt32(&data, authKindKerberosV5)
 
 		t.Run("Write", func(t *testing.T) {
 			var msg AuthenticationKerberosV5
@@ -167,9 +155,9 @@ func TestMessage(t *testing.T) {
 
 	t.Run("AuthenticationCleartextPassword", func(t *testing.T) {
 		var data bytes.Buffer
-		writeKind(&data, KindAuthentication)
+		writeByte(&data, msgKindAuthentication)
 		writeInt32(&data, 8)
-		writeInt32(&data, 3)
+		writeInt32(&data, authKindCleartextPassword)
 
 		t.Run("Write", func(t *testing.T) {
 			var msg AuthenticationCleartextPassword
@@ -196,9 +184,9 @@ func TestMessage(t *testing.T) {
 
 	t.Run("AuthenticationMD5Password", func(t *testing.T) {
 		var data bytes.Buffer
-		writeKind(&data, KindAuthentication)
+		writeByte(&data, msgKindAuthentication)
 		writeInt32(&data, 12)
-		writeInt32(&data, 5)
+		writeInt32(&data, authKindMD5Password)
 		writeBytes(&data, []byte("abcd"))
 
 		t.Run("Write", func(t *testing.T) {
@@ -227,133 +215,225 @@ func TestMessage(t *testing.T) {
 	})
 
 	t.Run("AuthenticationGSS", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindAuthentication)
+		writeInt32(&data, 8)
+		writeInt32(&data, authKindGSS)
 
-		writeInt32(&buf, 7)
+		t.Run("Write", func(t *testing.T) {
+			var msg AuthenticationGSS
 
-		var m xMessage
-		m.kind = KindAuthentication
-		m.data = buf.Bytes()
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result AuthenticationGSS
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(AuthenticationGSS)
+			require.True(t, ok)
+
+			var expected AuthenticationGSS
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("AuthenticationGSSContinue", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindAuthentication)
+		writeInt32(&data, 13)
+		writeInt32(&data, authKindGSSContinue)
+		writeBytes(&data, []byte("hello"))
 
-		writeInt32(&buf, 8)
-		writeBytes(&buf, []byte("hello"))
+		t.Run("Write", func(t *testing.T) {
+			var msg AuthenticationGSSContinue
+			msg.Data = []byte("hello")
 
-		var m xMessage
-		m.kind = KindAuthentication
-		m.data = buf.Bytes()
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result AuthenticationGSSContinue
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, []byte("hello"), result.Data)
+			m, ok := value.(AuthenticationGSSContinue)
+			require.True(t, ok)
+
+			var expected AuthenticationGSSContinue
+			expected.Data = []byte("hello")
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("AuthenticationSSPI", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindAuthentication)
+		writeInt32(&data, 8)
+		writeInt32(&data, authKindSSPI)
 
-		writeInt32(&buf, 9)
+		t.Run("Write", func(t *testing.T) {
+			var msg AuthenticationSSPI
 
-		var m xMessage
-		m.kind = KindAuthentication
-		m.data = buf.Bytes()
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result AuthenticationSSPI
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(AuthenticationSSPI)
+			require.True(t, ok)
+
+			var expected AuthenticationSSPI
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("AuthenticationSASL", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindAuthentication)
+		writeInt32(&data, 21)
+		writeInt32(&data, authKindSASL)
+		writeString(&data, "one")
+		writeString(&data, "two")
+		writeString(&data, "three")
 
-		writeInt32(&buf, 10)
-		writeString(&buf, "one")
-		writeString(&buf, "two")
-		writeString(&buf, "three")
+		t.Run("Write", func(t *testing.T) {
+			var msg AuthenticationSASL
+			msg.Mechanisms = []string{"one", "two", "three"}
 
-		var m xMessage
-		m.kind = KindAuthentication
-		m.data = buf.Bytes()
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result AuthenticationSASL
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, []string{"one", "two", "three"}, result.Mechanisms)
+			m, ok := value.(AuthenticationSASL)
+			require.True(t, ok)
+
+			var expected AuthenticationSASL
+			expected.Mechanisms = []string{"one", "two", "three"}
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("AuthenticationSASLContinue", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindAuthentication)
+		writeInt32(&data, 13)
+		writeInt32(&data, authKindSASLContinue)
+		writeBytes(&data, []byte("hello"))
 
-		writeInt32(&buf, 11)
-		writeBytes(&buf, []byte("hello"))
+		t.Run("Write", func(t *testing.T) {
+			var msg AuthenticationSASLContinue
+			msg.Data = []byte("hello")
 
-		var m xMessage
-		m.kind = KindAuthentication
-		m.data = buf.Bytes()
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result AuthenticationSASLContinue
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, []byte("hello"), result.Data)
+			m, ok := value.(AuthenticationSASLContinue)
+			require.True(t, ok)
+
+			var expected AuthenticationSASLContinue
+			expected.Data = []byte("hello")
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("AuthenticationSASLFinal", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindAuthentication)
+		writeInt32(&data, 13)
+		writeInt32(&data, authKindSASLFinal)
+		writeBytes(&data, []byte("hello"))
 
-		writeInt32(&buf, 12)
-		writeBytes(&buf, []byte("hello"))
+		t.Run("Write", func(t *testing.T) {
+			var msg AuthenticationSASLFinal
+			msg.Data = []byte("hello")
 
-		var m xMessage
-		m.kind = KindAuthentication
-		m.data = buf.Bytes()
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result AuthenticationSASLFinal
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, []byte("hello"), result.Data)
+			m, ok := value.(AuthenticationSASLFinal)
+			require.True(t, ok)
+
+			var expected AuthenticationSASLFinal
+			expected.Data = []byte("hello")
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("BackendKeyData", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindKeyData)
+		writeInt32(&data, 13)
+		writeInt32(&data, 111)
+		writeBytes(&data, []byte("hello"))
 
-		writeInt32(&buf, 111)
-		writeBytes(&buf, []byte("hello"))
+		t.Run("Write", func(t *testing.T) {
+			var msg BackendKeyData
+			msg.ProcessID = 111
+			msg.SecretKey = []byte("hello")
 
-		var m xMessage
-		m.kind = KindKeyData
-		m.data = buf.Bytes()
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result BackendKeyData
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, int32(111), result.ProcessID)
-		require.Equal(t, []byte("hello"), result.SecretKey)
+			m, ok := value.(BackendKeyData)
+			require.True(t, ok)
+
+			var expected BackendKeyData
+			expected.ProcessID = 111
+			expected.SecretKey = []byte("hello")
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("BindComplete", func(t *testing.T) {
@@ -431,7 +511,7 @@ func TestMessage(t *testing.T) {
 	t.Run("CopyInResponse", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeInt8(&buf, 1)
+		writeByte(&buf, 1)
 		writeInt16(&buf, 2)
 		writeInt16(&buf, int16(FormatBinary))
 		writeInt16(&buf, int16(FormatBinary))
@@ -453,7 +533,7 @@ func TestMessage(t *testing.T) {
 	t.Run("CopyOutResponse", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeInt8(&buf, 1)
+		writeByte(&buf, 1)
 		writeInt16(&buf, 2)
 		writeInt16(&buf, int16(FormatBinary))
 		writeInt16(&buf, int16(FormatBinary))
@@ -475,7 +555,7 @@ func TestMessage(t *testing.T) {
 	t.Run("CopyBothResponse", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		writeInt8(&buf, 1)
+		writeByte(&buf, 1)
 		writeInt16(&buf, 2)
 		writeInt16(&buf, int16(FormatBinary))
 		writeInt16(&buf, int16(FormatBinary))
@@ -542,7 +622,7 @@ func TestMessage(t *testing.T) {
 		writeString(&buf, "ERROR")
 		writeField(&buf, FieldMessage)
 		writeString(&buf, "hello world")
-		writeInt8(&buf, 0)
+		writeByte(&buf, 0)
 
 		var m xMessage
 		m.kind = KindErrorResponse
@@ -618,7 +698,7 @@ func TestMessage(t *testing.T) {
 		writeString(&buf, "WARNING")
 		writeField(&buf, FieldMessage)
 		writeString(&buf, "hello world")
-		writeInt8(&buf, 0)
+		writeByte(&buf, 0)
 
 		var m xMessage
 		m.kind = KindNoticeResponse
