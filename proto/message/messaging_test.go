@@ -749,28 +749,28 @@ func TestMessage(t *testing.T) {
 
 	t.Run("FunctionCallResponse", func(t *testing.T) {
 		var dataNil bytes.Buffer
-		writeByte(&data, msgKindFunctionCallResponse)
-		writeInt32(&data, 8)
-		writeInt32(&data, -1)
+		writeByte(&dataNil, msgKindFunctionCallResponse)
+		writeInt32(&dataNil, 8)
+		writeInt32(&dataNil, -1)
 
 		var msgNil FunctionCallResponse
 		msgNil.Result = nil
 
 		var dataZero bytes.Buffer
-		writeByte(&data, msgKindFunctionCallResponse)
-		writeInt32(&data, 8)
-		writeInt32(&data, 0)
+		writeByte(&dataZero, msgKindFunctionCallResponse)
+		writeInt32(&dataZero, 8)
+		writeInt32(&dataZero, 0)
 
 		var msgZero FunctionCallResponse
 		msgZero.Result = []byte{}
 
 		var dataPresent bytes.Buffer
-		writeByte(&data, msgKindFunctionCallResponse)
-		writeInt32(&data, 19)
-		writeInt32(&data, 11)
-		writeBytes(&data, []byte("hello world"))
+		writeByte(&dataPresent, msgKindFunctionCallResponse)
+		writeInt32(&dataPresent, 19)
+		writeInt32(&dataPresent, 11)
+		writeBytes(&dataPresent, []byte("hello world"))
 
-		var msgPresent FuncationCallResponse
+		var msgPresent FunctionCallResponse
 		msgPresent.Result = []byte("hello world")
 
 		t.Run("Write", func(t *testing.T) {
@@ -833,205 +833,348 @@ func TestMessage(t *testing.T) {
 	})
 
 	t.Run("NegotiateProtocolVersion", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindNegotiateProtocolVersion)
+		writeInt32(&data, 22)
+		writeInt32(&data, 111)      // newest supported minor version
+		writeInt32(&data, 2)        // number of unrecognized protocols
+		writeString(&data, "hello") // first unrecognized protocol
+		writeString(&data, "world") // second unrecognized protocol
 
-		writeInt32(&buf, 111)      // newest supported minor version
-		writeInt32(&buf, 2)        // number of unrecognized protocols
-		writeString(&buf, "hello") // first unrecognized protocol
-		writeString(&buf, "world") // second unrecognized protocol
+		var msg NegotiateProtocolVersion
+		msg.MinorVersionSupported = 111
+		msg.UnrecognizedOptions = []string{
+			"hello",
+			"world",
+		}
 
-		var m xMessage
-		m.kind = KindNegotiateProtocolVersion
-		m.data = buf.Bytes()
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result NegotiateProtocolVersion
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, int32(111), result.MinorVersionSupported)
-		require.Equal(t, []string{"hello", "world"}, result.UnrecognizedOptions)
+			m, ok := value.(NegotiateProtocolVersion)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("NoData", func(t *testing.T) {
-		var m xMessage
-		m.kind = KindNoData
-		m.data = []byte{}
+		var data bytes.Buffer
+		writeByte(&data, msgKindNoData)
+		writeInt32(&data, 4)
 
-		var result NoData
+		var msg NoData
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
+
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
+
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(NoData)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("NoticeResponse", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindNoticeResponse)
+		writeInt32(&data, 27)
+		writeByte(&data, FieldSeverity)
+		writeString(&data, "WARNING")
+		writeByte(&data, FieldMessage)
+		writeString(&data, "hello world")
+		writeByte(&data, 0)
 
-		writeField(&buf, FieldSeverity)
-		writeString(&buf, "WARNING")
-		writeField(&buf, FieldMessage)
-		writeString(&buf, "hello world")
-		writeByte(&buf, 0)
+		var msg NoticeResponse
+		msg.Fields = []byte{
+			FieldSeverity,
+			FieldMessage,
+		}
+		msg.Values = []string{
+			"WARNING",
+			"hello world",
+		}
 
-		var m xMessage
-		m.kind = KindNoticeResponse
-		m.data = buf.Bytes()
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result NoticeResponse
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, []Field{FieldSeverity, FieldMessage}, result.Fields)
-		require.Equal(t, []string{"WARNING", "hello world"}, result.Values)
+			m, ok := value.(NoticeResponse)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("NotificationResponse", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindNotificationResponse)
+		writeInt32(&data, 16)
+		writeInt32(&data, 111)
+		writeString(&data, "hello")
+		writeString(&data, "world")
 
-		writeInt32(&buf, 111)
-		writeString(&buf, "hello")
-		writeString(&buf, "world")
+		var msg NotificationResponse
+		msg.ProcessID = 111
+		msg.Channel = "hello"
+		msg.Payload = "world"
 
-		var m xMessage
-		m.kind = KindNotificationResponse
-		m.data = buf.Bytes()
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result NotificationResponse
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, int32(111), result.ProcessID)
-		require.Equal(t, "hello", result.Channel)
-		require.Equal(t, "world", result.Payload)
+			m, ok := value.(NotificationResponse)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("ParameterDescription", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindParameterDescription)
+		writeInt32(&data, 14)
+		writeInt16(&data, 2)
+		writeInt32(&data, 1)
+		writeInt32(&data, 2)
 
-		writeInt16(&buf, 2)
-		writeInt32(&buf, 1)
-		writeInt32(&buf, 2)
+		var msg ParameterDescription
+		msg.Parameters = []int32{
+			1,
+			2,
+		}
 
-		var m xMessage
-		m.kind = KindParameterDescription
-		m.data = buf.Bytes()
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result ParameterDescription
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Len(t, result.Parameters, 2)
-		require.Equal(t, int32(1), result.Parameters[0])
-		require.Equal(t, int32(2), result.Parameters[1])
+			m, ok := value.(ParameterDescription)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("ParameterStatus", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindParameterStatus)
+		writeInt32(&data, 16)
+		writeString(&data, "hello")
+		writeString(&data, "world")
 
-		writeString(&buf, "hello")
-		writeString(&buf, "world")
+		var msg ParameterStatus
+		msg.Name = "hello"
+		msg.Value = "world"
 
-		var m xMessage
-		m.kind = KindParameterStatus
-		m.data = buf.Bytes()
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result ParameterStatus
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, "hello", result.Name)
-		require.Equal(t, "world", result.Value)
+			m, ok := value.(ParameterStatus)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("ParseComplete", func(t *testing.T) {
-		var m xMessage
-		m.kind = KindParseComplete
-		m.data = []byte{}
+		var data bytes.Buffer
+		writeByte(&data, msgKindParseComplete)
+		writeInt32(&data, 4)
 
-		var result ParseComplete
+		var msg ParseComplete
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
+
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
+
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(ParseComplete)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("PortalSuspended", func(t *testing.T) {
-		var m xMessage
-		m.kind = KindPortalSuspended
-		m.data = []byte{}
+		var data bytes.Buffer
+		writeByte(&data, msgKindPortalSuspended)
+		writeInt32(&data, 4)
 
-		var result PortalSuspended
+		var msg PortalSuspended
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
+
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
+
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(PortalSuspended)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("ReadyForQuery", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindReadyForQuery)
+		writeInt32(&data, 5)
+		writeByte(&data, TxStatusActive)
 
-		writeTxStatus(&buf, TxStatusActive)
+		var msg ReadyForQuery
+		msg.TxStatus = TxStatusActive
 
-		var m xMessage
-		m.kind = KindReadyForQuery
-		m.data = buf.Bytes()
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result ReadyForQuery
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, TxStatusActive, result.TxStatus)
+			m, ok := value.(ReadyForQuery)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("RowDescription", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindRowDescription)
+		writeInt32(&data, 54)
+		writeInt16(&data, 2)
 
-		writeInt16(&buf, 2)
+		writeString(&data, "hello")
+		writeInt32(&data, 101)
+		writeInt16(&data, 102)
+		writeInt32(&data, 103)
+		writeInt16(&data, 104)
+		writeInt32(&data, 105)
+		writeInt16(&data, ColumnFormatBinary)
 
-		writeString(&buf, "hello")
-		writeInt32(&buf, 101)
-		writeInt16(&buf, 102)
-		writeInt32(&buf, 103)
-		writeInt16(&buf, 104)
-		writeInt32(&buf, 105)
-		writeFormat(&buf, FormatBinary)
+		writeString(&data, "world")
+		writeInt32(&data, 201)
+		writeInt16(&data, 202)
+		writeInt32(&data, 203)
+		writeInt16(&data, 204)
+		writeInt32(&data, 205)
+		writeInt16(&data, ColumnFormatBinary)
 
-		writeString(&buf, "world")
-		writeInt32(&buf, 201)
-		writeInt16(&buf, 202)
-		writeInt32(&buf, 203)
-		writeInt16(&buf, 204)
-		writeInt32(&buf, 205)
-		writeFormat(&buf, FormatBinary)
+		var msg RowDescription
+		msg.Names = []string{
+			"hello",
+			"world",
+		}
+		msg.Tables = []int32{
+			101,
+			201,
+		}
+		msg.Columns = []int16{
+			102,
+			202,
+		}
+		msg.DataTypes = []int32{
+			103,
+			203,
+		}
+		msg.Sizes = []int16{
+			104,
+			204,
+		}
+		msg.Modifiers = []int32{
+			105,
+			205,
+		}
+		msg.Formats = []int16{
+			ColumnFormatBinary,
+			ColumnFormatBinary,
+		}
 
-		var m xMessage
-		m.kind = KindRowDescription
-		m.data = buf.Bytes()
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result RowDescription
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, []string{"hello", "world"}, result.Names)
-		require.Equal(t, []int32{101, 201}, result.Tables)
-		require.Equal(t, []int16{102, 202}, result.Columns)
-		require.Equal(t, []int32{103, 203}, result.DataTypes)
-		require.Equal(t, []int16{104, 204}, result.Sizes)
-		require.Equal(t, []int32{105, 205}, result.Modifiers)
-		require.Equal(t, []Format{FormatBinary, FormatBinary}, result.Formats)
+			m, ok := value.(RowDescription)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 }
