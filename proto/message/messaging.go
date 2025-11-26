@@ -53,96 +53,42 @@ const (
 	authKindSASLFinal         int32 = 12
 )
 
-type Field byte
-
 const (
-	FieldSeverity         Field = 'S'
-	FieldSeverityRaw      Field = 'V'
-	FieldCode             Field = 'C'
-	FieldMessage          Field = 'M'
-	FieldDetail           Field = 'D'
-	FieldHint             Field = 'H'
-	FieldPosition         Field = 'P'
-	FieldInternalPosition Field = 'p'
-	FieldInternalQuery    Field = 'q'
-	FieldWhere            Field = 'W'
-	FieldSchema           Field = 's'
-	FieldTable            Field = 't'
-	FieldColumn           Field = 'c'
-	FieldDataType         Field = 'd'
-	FieldConstraint       Field = 'n'
-	FieldFile             Field = 'F'
-	FieldLine             Field = 'L'
-	FieldRoutine          Field = 'R'
+	FieldSeverity         byte = 'S'
+	FieldSeverityRaw      byte = 'V'
+	FieldCode             byte = 'C'
+	FieldMessage          byte = 'M'
+	FieldDetail           byte = 'D'
+	FieldHint             byte = 'H'
+	FieldPosition         byte = 'P'
+	FieldInternalPosition byte = 'p'
+	FieldInternalQuery    byte = 'q'
+	FieldWhere            byte = 'W'
+	FieldSchema           byte = 's'
+	FieldTable            byte = 't'
+	FieldColumn           byte = 'c'
+	FieldDataType         byte = 'd'
+	FieldConstraint       byte = 'n'
+	FieldFile             byte = 'F'
+	FieldLine             byte = 'L'
+	FieldRoutine          byte = 'R'
 )
-
-func ParseField(b byte) (Field, error) {
-	var err error
-	v := Field(b)
-
-	switch v {
-	case FieldSeverity:
-	case FieldSeverityRaw:
-	case FieldCode:
-	case FieldMessage:
-	case FieldDetail:
-	case FieldHint:
-	case FieldPosition:
-	case FieldInternalPosition:
-	case FieldInternalQuery:
-	case FieldWhere:
-	case FieldSchema:
-	case FieldTable:
-	case FieldColumn:
-	case FieldDataType:
-	case FieldConstraint:
-	case FieldFile:
-	case FieldLine:
-	case FieldRoutine:
-	default:
-		err = ErrInvalidValue
-	}
-	return v, err
-}
 
 const (
 	FormatText   int8 = 0
 	FormatBinary int8 = 1
 )
 
-func ParseFormat(i int8) (Format, error) {
-	var err error
-
-	switch i {
-	case FormatText:
-	case FormatBinary:
-	default:
-		err = ErrInvalidValue
-	}
-	return i, err
-}
-
-type TxStatus byte
-
 const (
-	TxStatusIdle   TxStatus = 'I'
-	TxStatusActive TxStatus = 'T'
-	TxStatusError  TxStatus = 'E'
+	ColumnFormatText   int16 = 0
+	ColumnFormatBinary int16 = 1
 )
 
-func ParseTxStatus(b byte) (TxStatus, error) {
-	var err error
-	v := TxStatus(b)
-
-	switch v {
-	case TxStatusIdle:
-	case TxStatusActive:
-	case TxStatusError:
-	default:
-		err = ErrInvalidValue
-	}
-	return v, err
-}
+const (
+	TxStatusIdle   byte = 'I'
+	TxStatusActive byte = 'T'
+	TxStatusError  byte = 'E'
+)
 
 func Read(r io.Reader) (any, error) {
 	var header [5]byte
@@ -581,25 +527,24 @@ func (x *xCopyDone) Decode(_ []byte) error {
 }
 
 type CopyInResponse struct {
-	Format  Format
-	Columns []Format
+	Format  int8
+	Columns []int16
 }
 
 type xCopyInResponse CopyInResponse
 
 func (x *xCopyInResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
-	writeFormat(&buf, x.Format)
+	writeInt8(&buf, x.Format)
 	writeInt16(&buf, int16(len(x.Columns)))
 	for _, f := range x.Columns {
-		writeFormat(&buf, f)
+		writeInt16(&buf, f)
 	}
 	return writeMessage(w, msgKindCopyInResponse, buf.Bytes())
 }
 
 func (x *xCopyInResponse) Decode(b []byte) error {
-	var format int8
-	bread, err := readInt8(b, &format)
+	bread, err := readInt8(b, &x.Format)
 	if err != nil {
 		return err
 	}
@@ -616,47 +561,36 @@ func (x *xCopyInResponse) Decode(b []byte) error {
 		return ErrValueUnderflow
 	}
 
-	x.Format, err = ParseFormat(int16(format))
-	if err != nil {
-		return err
-	}
-
-	x.Columns = make([]Format, int(columns))
+	x.Columns = make([]int16, int(columns))
 	for i := range columns {
-		var format int16
-		bread, err = readInt16(b, &format)
+		bread, err = readInt16(b, &x.Columns[i])
 		if err != nil {
 			return err
 		}
 		b = b[bread:]
-		x.Columns[i], err = ParseFormat(format)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
 
 type CopyOutResponse struct {
-	Format  Format
-	Columns []Format
+	Format  int8
+	Columns []int16
 }
 
 type xCopyOutResponse CopyOutResponse
 
 func (x *xCopyOutResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
-	writeFormat(&buf, x.Format)
+	writeInt8(&buf, x.Format)
 	writeInt16(&buf, int16(len(x.Columns)))
 	for _, f := range x.Columns {
-		writeFormat(&buf, f)
+		writeInt16(&buf, f)
 	}
 	return writeMessage(w, msgKindCopyOutResponse, buf.Bytes())
 }
 
 func (x *xCopyOutResponse) Decode(b []byte) error {
-	var format int8
-	bread, err := readInt8(b, &format)
+	bread, err := readInt8(b, &x.Format)
 	if err != nil {
 		return err
 	}
@@ -673,47 +607,36 @@ func (x *xCopyOutResponse) Decode(b []byte) error {
 		return ErrValueUnderflow
 	}
 
-	x.Format, err = ParseFormat(int16(format))
-	if err != nil {
-		return err
-	}
-
-	x.Columns = make([]Format, int(columns))
+	x.Columns = make([]int16, int(columns))
 	for i := range columns {
-		var format int16
-		bread, err = readInt16(b, &format)
+		bread, err = readInt16(b, &x.Columns[i])
 		if err != nil {
 			return err
 		}
 		b = b[bread:]
-		x.Columns[i], err = ParseFormat(format)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
 
 type CopyBothResponse struct {
-	Format  Format
-	Columns []Format
+	Format  int8
+	Columns []int16
 }
 
 type xCopyBothResponse CopyBothResponse
 
 func (x *xCopyBothResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
-	writeFormat(&buf, x.Format)
+	writeInt8(&buf, x.Format)
 	writeInt16(&buf, int16(len(x.Columns)))
 	for _, f := range x.Columns {
-		writeFormat(&buf, f)
+		writeInt16(&buf, f)
 	}
 	return writeMessage(w, msgKindCopyBothResponse, buf.Bytes())
 }
 
 func (x *xCopyBothResponse) Decode(b []byte) error {
-	var format int8
-	bread, err := readInt8(b, &format)
+	bread, err := readInt8(b, &x.Format)
 	if err != nil {
 		return err
 	}
@@ -730,23 +653,13 @@ func (x *xCopyBothResponse) Decode(b []byte) error {
 		return ErrValueUnderflow
 	}
 
-	x.Format, err = ParseFormat(int16(format))
-	if err != nil {
-		return err
-	}
-
-	x.Columns = make([]Format, int(columns))
+	x.Columns = make([]int16, int(columns))
 	for i := range columns {
-		var format int16
-		bread, err = readInt16(b, &format)
+		bread, err = readInt16(b, &x.Columns[i])
 		if err != nil {
 			return err
 		}
 		b = b[bread:]
-		x.Columns[i], err = ParseFormat(format)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -811,7 +724,7 @@ func (x *xEmptyQueryResponse) Decode(_ []byte) error {
 }
 
 type ErrorResponse struct {
-	Fields []Field
+	Fields []byte
 	Values []string
 }
 
@@ -820,7 +733,7 @@ type xErrorResponse ErrorResponse
 func (x *xErrorResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	for i := range len(x.Fields) {
-		writeField(&buf, x.Fields[i])
+		writeByte(&buf, x.Fields[i])
 		writeString(&buf, x.Values[i])
 	}
 	writeByte(&buf, 0)
@@ -828,19 +741,15 @@ func (x *xErrorResponse) Encode(w io.Writer) error {
 }
 
 func (x *xErrorResponse) Decode(b []byte) error {
-	var f byte
-	bread, err := readByte(b, &f)
+	var field byte
+	bread, err := readByte(b, &field)
 	if err != nil {
 		return err
 	}
 	b = b[bread:]
 
-	for f != 0 {
-		field, err := ParseField(f)
-		if err != nil {
-			return err
-		}
-		x.Fields = append(x.Fields, Field(field))
+	for field != 0 {
+		x.Fields = append(x.Fields, field)
 		var value string
 		bread, err = readString(b, &value)
 		if err != nil {
@@ -848,7 +757,7 @@ func (x *xErrorResponse) Decode(b []byte) error {
 		}
 		b = b[bread:]
 		x.Values = append(x.Values, value)
-		bread, err = readByte(b, &f)
+		bread, err = readByte(b, &field)
 		if err != nil {
 			return err
 		}
@@ -944,7 +853,7 @@ func (x *xNoData) Decode(_ []byte) error {
 }
 
 type NoticeResponse struct {
-	Fields []Field
+	Fields []byte
 	Values []string
 }
 
@@ -953,7 +862,7 @@ type xNoticeResponse NoticeResponse
 func (x *xNoticeResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	for i := range len(x.Fields) {
-		writeField(&buf, x.Fields[i])
+		writeByte(&buf, x.Fields[i])
 		writeString(&buf, x.Values[i])
 	}
 	writeByte(&buf, 0)
@@ -961,19 +870,15 @@ func (x *xNoticeResponse) Encode(w io.Writer) error {
 }
 
 func (x *xNoticeResponse) Decode(b []byte) error {
-	var f byte
-	bread, err := readByte(b, &f)
+	var field byte
+	bread, err := readByte(b, &field)
 	if err != nil {
 		return err
 	}
 	b = b[bread:]
 
-	for f != 0 {
-		field, err := ParseField(f)
-		if err != nil {
-			return err
-		}
-		x.Fields = append(x.Fields, Field(field))
+	for field != 0 {
+		x.Fields = append(x.Fields, field)
 		var value string
 		bread, err = readString(b, &value)
 		if err != nil {
@@ -981,7 +886,7 @@ func (x *xNoticeResponse) Decode(b []byte) error {
 		}
 		b = b[bread:]
 		x.Values = append(x.Values, value)
-		bread, err = readByte(b, &f)
+		bread, err = readByte(b, &field)
 		if err != nil {
 			return err
 		}
@@ -1116,24 +1021,19 @@ func (x *xPortalSuspended) Decode(_ []byte) error {
 }
 
 type ReadyForQuery struct {
-	TxStatus TxStatus
+	TxStatus byte
 }
 
 type xReadyForQuery ReadyForQuery
 
 func (x *xReadyForQuery) Encode(w io.Writer) error {
 	var buf bytes.Buffer
-	writeTxStatus(&buf, x.TxStatus)
+	writeByte(&buf, x.TxStatus)
 	return writeMessage(w, msgKindReadyForQuery, buf.Bytes())
 }
 
 func (x *xReadyForQuery) Decode(b []byte) error {
-	var status byte
-	_, err := readByte(b, &status)
-	if err != nil {
-		return err
-	}
-	x.TxStatus, err = ParseTxStatus(status)
+	_, err := readByte(b, &x.TxStatus)
 	if err != nil {
 		return err
 	}
@@ -1147,7 +1047,7 @@ type RowDescription struct {
 	DataTypes []int32
 	Sizes     []int16
 	Modifiers []int32
-	Formats   []Format
+	Formats   []int16
 }
 
 type xRowDescription RowDescription
@@ -1162,7 +1062,7 @@ func (x *xRowDescription) Encode(w io.Writer) error {
 		writeInt32(&buf, x.DataTypes[i])
 		writeInt16(&buf, x.Sizes[i])
 		writeInt32(&buf, x.Modifiers[i])
-		writeFormat(&buf, x.Formats[i])
+		writeInt16(&buf, x.Formats[i])
 	}
 	return writeMessage(w, msgKindRowDescription, buf.Bytes())
 }
@@ -1181,7 +1081,7 @@ func (x *xRowDescription) Decode(b []byte) error {
 	x.DataTypes = make([]int32, length)
 	x.Sizes = make([]int16, length)
 	x.Modifiers = make([]int32, length)
-	x.Formats = make([]Format, length)
+	x.Formats = make([]int16, length)
 
 	for i := range length {
 		bread, err := readString(b, &x.Names[i])
@@ -1220,17 +1120,11 @@ func (x *xRowDescription) Decode(b []byte) error {
 		}
 		b = b[bread:]
 
-		var format int16
-		bread, err = readInt16(b, &format)
+		bread, err = readInt16(b, &x.Formats[i])
 		if err != nil {
 			return err
 		}
 		b = b[bread:]
-
-		x.Formats[i], err = ParseFormat(format)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -1397,16 +1291,8 @@ func writeBytes(w io.Writer, b []byte) error {
 	return err
 }
 
-func writeField(w io.Writer, f Field) error {
-	return writeByte(w, byte(f))
-}
-
-func writeFormat(w io.Writer, f Format) error {
-	return writeInt16(w, int16(f))
-}
-
-func writeTxStatus(w io.Writer, s TxStatus) error {
-	return writeByte(w, byte(s))
+func writeInt8(w io.Writer, i int8) error {
+	return writeByte(w, byte(i))
 }
 
 func writeInt16(w io.Writer, i int16) error {
