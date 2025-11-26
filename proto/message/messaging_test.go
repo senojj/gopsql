@@ -576,76 +576,110 @@ func TestMessage(t *testing.T) {
 	})
 
 	t.Run("CopyOutResponse", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindCopyOutResponse)
+		writeInt32(&data, 11)
+		writeInt8(&data, FormatBinary)
+		writeInt16(&data, 2)
+		writeInt16(&data, ColumnFormatBinary)
+		writeInt16(&data, ColumnFormatBinary)
 
-		writeByte(&buf, 1)
-		writeInt16(&buf, 2)
-		writeInt16(&buf, int16(FormatBinary))
-		writeInt16(&buf, int16(FormatBinary))
+		var msg CopyOutResponse
+		msg.Format = FormatBinary
+		msg.Columns = make([]int16, 2)
+		msg.Columns[0] = ColumnFormatBinary
+		msg.Columns[1] = ColumnFormatBinary
 
-		var m xMessage
-		m.kind = KindCopyOutResponse
-		m.data = buf.Bytes()
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result CopyOutResponse
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, FormatBinary, result.Format)
-		require.Equal(t, []Format{FormatBinary, FormatBinary}, result.Columns)
+			m, ok := value.(CopyOutResponse)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("CopyBothResponse", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindCopyBothResponse)
+		writeInt32(&data, 11)
+		writeInt8(&data, FormatBinary)
+		writeInt16(&data, 2)
+		writeInt16(&data, ColumnFormatBinary)
+		writeInt16(&data, ColumnFormatBinary)
 
-		writeByte(&buf, 1)
-		writeInt16(&buf, 2)
-		writeInt16(&buf, int16(FormatBinary))
-		writeInt16(&buf, int16(FormatBinary))
+		var msg CopyBothResponse
+		msg.Format = FormatBinary
+		msg.Columns = make([]int16, 2)
+		msg.Columns[0] = ColumnFormatBinary
+		msg.Columns[1] = ColumnFormatBinary
 
-		var m xMessage
-		m.kind = KindCopyBothResponse
-		m.data = buf.Bytes()
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result CopyBothResponse
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, FormatBinary, result.Format)
-		require.Equal(t, []Format{FormatBinary, FormatBinary}, result.Columns)
+			m, ok := value.(CopyBothResponse)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("DataRow", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindDataRow)
+		writeInt32(&data, 32)
+		writeInt16(&data, 4)
+		writeInt32(&data, 5)
+		writeBytes(&data, []byte("hello"))
+		writeInt32(&data, -1)
+		writeInt32(&data, 0)
+		writeInt32(&data, 5)
+		writeBytes(&data, []byte("world"))
 
-		writeInt16(&buf, 4)
-		writeInt32(&buf, 5)
-		writeBytes(&buf, []byte("hello"))
-		writeInt32(&buf, -1)
-		writeInt32(&buf, 0)
-		writeInt32(&buf, 5)
-		writeBytes(&buf, []byte("world"))
-
-		var m xMessage
-		m.kind = KindDataRow
-		m.data = buf.Bytes()
-
-		var result DataRow
-
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
-
-		require.Equal(t, [][]byte{
+		var msg DataRow
+		msg.Columns = [][]byte{
 			[]byte("hello"),
 			[]byte(nil),
 			[]byte{},
 			[]byte("world"),
-		}, result.Columns)
+		}
+
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
+
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
+
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(DataRow)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("EmptyQueryResponse", func(t *testing.T) {
