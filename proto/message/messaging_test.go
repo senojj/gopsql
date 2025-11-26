@@ -683,57 +683,153 @@ func TestMessage(t *testing.T) {
 	})
 
 	t.Run("EmptyQueryResponse", func(t *testing.T) {
-		var m xMessage
-		m.kind = KindEmptyQueryResponse
-		m.data = []byte{}
+		var data bytes.Buffer
+		writeByte(&data, msgKindEmptyQueryResponse)
+		writeInt32(&data, 4)
 
-		var result EmptyQueryResponse
+		var msg EmptyQueryResponse
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
+
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
+
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(EmptyQueryResponse)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("ErrorResponse", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindErrorResponse)
+		writeInt32(&data, 25)
+		writeByte(&data, FieldSeverity)
+		writeString(&data, "ERROR")
+		writeByte(&data, FieldMessage)
+		writeString(&data, "hello world")
+		writeByte(&data, 0)
 
-		writeField(&buf, FieldSeverity)
-		writeString(&buf, "ERROR")
-		writeField(&buf, FieldMessage)
-		writeString(&buf, "hello world")
-		writeByte(&buf, 0)
+		var msg ErrorResponse
+		msg.Fields = []byte{
+			FieldSeverity,
+			FieldMessage,
+		}
+		msg.Values = []string{
+			"ERROR",
+			"hello world",
+		}
 
-		var m xMessage
-		m.kind = KindErrorResponse
-		m.data = buf.Bytes()
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result ErrorResponse
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, []Field{FieldSeverity, FieldMessage}, result.Fields)
-		require.Equal(t, []string{"ERROR", "hello world"}, result.Values)
+			m, ok := value.(ErrorResponse)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("FunctionCallResponse", func(t *testing.T) {
-		var buf bytes.Buffer
+		var dataNil bytes.Buffer
+		writeByte(&data, msgKindFunctionCallResponse)
+		writeInt32(&data, 8)
+		writeInt32(&data, -1)
 
-		writeInt32(&buf, 11)                    // length of function response data
-		writeBytes(&buf, []byte("hello world")) // function response data
+		var msgNil FunctionCallResponse
+		msgNil.Result = nil
 
-		var m xMessage
-		m.kind = KindFunctionCallResponse
-		m.data = buf.Bytes()
+		var dataZero bytes.Buffer
+		writeByte(&data, msgKindFunctionCallResponse)
+		writeInt32(&data, 8)
+		writeInt32(&data, 0)
 
-		var result FunctionCallResponse
+		var msgZero FunctionCallResponse
+		msgZero.Result = []byte{}
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		var dataPresent bytes.Buffer
+		writeByte(&data, msgKindFunctionCallResponse)
+		writeInt32(&data, 19)
+		writeInt32(&data, 11)
+		writeBytes(&data, []byte("hello world"))
 
-		require.Equal(t, []byte("hello world"), result.Result)
+		var msgPresent FuncationCallResponse
+		msgPresent.Result = []byte("hello world")
+
+		t.Run("Write", func(t *testing.T) {
+			t.Run("Nil", func(t *testing.T) {
+				var buf bytes.Buffer
+				err := Write(&buf, &msgNil)
+				require.NoError(t, err)
+
+				require.Equal(t, dataNil.Bytes(), buf.Bytes())
+			})
+
+			t.Run("Zero", func(t *testing.T) {
+				var buf bytes.Buffer
+				err := Write(&buf, &msgZero)
+				require.NoError(t, err)
+
+				require.Equal(t, dataZero.Bytes(), buf.Bytes())
+			})
+
+			t.Run("Present", func(t *testing.T) {
+				var buf bytes.Buffer
+				err := Write(&buf, &msgPresent)
+				require.NoError(t, err)
+
+				require.Equal(t, dataPresent.Bytes(), buf.Bytes())
+			})
+		})
+
+		t.Run("Read", func(t *testing.T) {
+			t.Run("Nil", func(t *testing.T) {
+				value, err := Read(&dataNil)
+				require.NoError(t, err)
+
+				m, ok := value.(FunctionCallResponse)
+				require.True(t, ok)
+
+				require.Equal(t, msgNil, m)
+			})
+
+			t.Run("Zero", func(t *testing.T) {
+				value, err := Read(&dataZero)
+				require.NoError(t, err)
+
+				m, ok := value.(FunctionCallResponse)
+				require.True(t, ok)
+
+				require.Equal(t, msgZero, m)
+			})
+
+			t.Run("Present", func(t *testing.T) {
+				value, err := Read(&dataPresent)
+				require.NoError(t, err)
+
+				m, ok := value.(FunctionCallResponse)
+				require.True(t, ok)
+
+				require.Equal(t, msgPresent, m)
+			})
+		})
 	})
 
 	t.Run("NegotiateProtocolVersion", func(t *testing.T) {
