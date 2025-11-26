@@ -101,9 +101,9 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, 8)
 		writeInt32(&data, authKindOk)
 
-		t.Run("Write", func(t *testing.T) {
-			var msg AuthenticationOk
+		var msg AuthenticationOk
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -118,9 +118,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(AuthenticationOk)
 			require.True(t, ok)
 
-			var expected AuthenticationOk
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -130,9 +128,9 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, 8)
 		writeInt32(&data, authKindKerberosV5)
 
-		t.Run("Write", func(t *testing.T) {
-			var msg AuthenticationKerberosV5
+		var msg AuthenticationKerberosV5
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -147,9 +145,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(AuthenticationKerberosV5)
 			require.True(t, ok)
 
-			var expected AuthenticationKerberosV5
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -159,9 +155,9 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, 8)
 		writeInt32(&data, authKindCleartextPassword)
 
-		t.Run("Write", func(t *testing.T) {
-			var msg AuthenticationCleartextPassword
+		var msg AuthenticationCleartextPassword
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -176,9 +172,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(AuthenticationCleartextPassword)
 			require.True(t, ok)
 
-			var expected AuthenticationCleartextPassword
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -189,10 +183,10 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, authKindMD5Password)
 		writeBytes(&data, []byte("abcd"))
 
-		t.Run("Write", func(t *testing.T) {
-			var msg AuthenticationMD5Password
-			msg.Salt = [4]byte{'a', 'b', 'c', 'd'}
+		var msg AuthenticationMD5Password
+		msg.Salt = [4]byte{'a', 'b', 'c', 'd'}
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -207,10 +201,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(AuthenticationMD5Password)
 			require.True(t, ok)
 
-			var expected AuthenticationMD5Password
-			expected.Salt = [4]byte{'a', 'b', 'c', 'd'}
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -220,9 +211,9 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, 8)
 		writeInt32(&data, authKindGSS)
 
-		t.Run("Write", func(t *testing.T) {
-			var msg AuthenticationGSS
+		var msg AuthenticationGSS
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -237,9 +228,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(AuthenticationGSS)
 			require.True(t, ok)
 
-			var expected AuthenticationGSS
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -250,10 +239,10 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, authKindGSSContinue)
 		writeBytes(&data, []byte("hello"))
 
-		t.Run("Write", func(t *testing.T) {
-			var msg AuthenticationGSSContinue
-			msg.Data = []byte("hello")
+		var msg AuthenticationGSSContinue
+		msg.Data = []byte("hello")
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -268,10 +257,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(AuthenticationGSSContinue)
 			require.True(t, ok)
 
-			var expected AuthenticationGSSContinue
-			expected.Data = []byte("hello")
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -281,9 +267,9 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, 8)
 		writeInt32(&data, authKindSSPI)
 
-		t.Run("Write", func(t *testing.T) {
-			var msg AuthenticationSSPI
+		var msg AuthenticationSSPI
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -298,9 +284,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(AuthenticationSSPI)
 			require.True(t, ok)
 
-			var expected AuthenticationSSPI
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -313,10 +297,10 @@ func TestMessage(t *testing.T) {
 		writeString(&data, "two")
 		writeString(&data, "three")
 
-		t.Run("Write", func(t *testing.T) {
-			var msg AuthenticationSASL
-			msg.Mechanisms = []string{"one", "two", "three"}
+		var msg AuthenticationSASL
+		msg.Mechanisms = []string{"one", "two", "three"}
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -331,10 +315,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(AuthenticationSASL)
 			require.True(t, ok)
 
-			var expected AuthenticationSASL
-			expected.Mechanisms = []string{"one", "two", "three"}
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -345,10 +326,10 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, authKindSASLContinue)
 		writeBytes(&data, []byte("hello"))
 
-		t.Run("Write", func(t *testing.T) {
-			var msg AuthenticationSASLContinue
-			msg.Data = []byte("hello")
+		var msg AuthenticationSASLContinue
+		msg.Data = []byte("hello")
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -363,10 +344,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(AuthenticationSASLContinue)
 			require.True(t, ok)
 
-			var expected AuthenticationSASLContinue
-			expected.Data = []byte("hello")
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -377,10 +355,10 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, authKindSASLFinal)
 		writeBytes(&data, []byte("hello"))
 
-		t.Run("Write", func(t *testing.T) {
-			var msg AuthenticationSASLFinal
-			msg.Data = []byte("hello")
+		var msg AuthenticationSASLFinal
+		msg.Data = []byte("hello")
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -395,10 +373,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(AuthenticationSASLFinal)
 			require.True(t, ok)
 
-			var expected AuthenticationSASLFinal
-			expected.Data = []byte("hello")
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -409,11 +384,11 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, 111)
 		writeBytes(&data, []byte("hello"))
 
-		t.Run("Write", func(t *testing.T) {
-			var msg BackendKeyData
-			msg.ProcessID = 111
-			msg.SecretKey = []byte("hello")
+		var msg BackendKeyData
+		msg.ProcessID = 111
+		msg.SecretKey = []byte("hello")
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -428,11 +403,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(BackendKeyData)
 			require.True(t, ok)
 
-			var expected BackendKeyData
-			expected.ProcessID = 111
-			expected.SecretKey = []byte("hello")
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -441,9 +412,9 @@ func TestMessage(t *testing.T) {
 		writeByte(&data, msgKindBindComplete)
 		writeInt32(&data, 4)
 
-		t.Run("Write", func(t *testing.T) {
-			var msg BindComplete
+		var msg BindComplete
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -458,9 +429,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(BindComplete)
 			require.True(t, ok)
 
-			var expected BindComplete
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -469,9 +438,9 @@ func TestMessage(t *testing.T) {
 		writeByte(&data, msgKindCloseComplete)
 		writeInt32(&data, 4)
 
-		t.Run("Write", func(t *testing.T) {
-			var msg CloseComplete
+		var msg CloseComplete
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -486,9 +455,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(CloseComplete)
 			require.True(t, ok)
 
-			var expected CloseComplete
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -498,10 +465,10 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, 17)
 		writeString(&data, "INSERT 11 11")
 
-		t.Run("Write", func(t *testing.T) {
-			var msg CommandComplete
-			msg.Tag = "INSERT 11 11"
+		var msg CommandComplete
+		msg.Tag = "INSERT 11 11"
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -516,10 +483,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(CommandComplete)
 			require.True(t, ok)
 
-			var expected CommandComplete
-			expected.Tag = "INSERT 11 11"
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -529,10 +493,10 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, 9)
 		writeBytes(&data, []byte("hello"))
 
-		t.Run("Write", func(t *testing.T) {
-			var msg CopyData
-			msg.Data = []byte("hello")
+		var msg CopyData
+		msg.Data = []byte("hello")
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -547,10 +511,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(CopyData)
 			require.True(t, ok)
 
-			var expected CopyData
-			expected.Data = []byte("hello")
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -559,9 +520,9 @@ func TestMessage(t *testing.T) {
 		writeByte(&data, msgKindCopyDone)
 		writeInt32(&data, 4)
 
-		t.Run("Write", func(t *testing.T) {
-			var msg CopyDone
+		var msg CopyDone
 
+		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := Write(&buf, &msg)
 			require.NoError(t, err)
@@ -576,9 +537,7 @@ func TestMessage(t *testing.T) {
 			m, ok := value.(CopyDone)
 			require.True(t, ok)
 
-			var expected CopyDone
-
-			require.Equal(t, expected, m)
+			require.Equal(t, msg, m)
 		})
 	})
 
@@ -588,27 +547,32 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, 11)
 		writeInt8(&data, FormatBinary)
 		writeInt16(&data, 2)
-		writeInt16(&data, int16(FormatBinary))
-		writeInt16(&data, int16(FormatBinary))
-		var buf bytes.Buffer
+		writeInt16(&data, ColumnFormatBinary)
+		writeInt16(&data, ColumnFormatBinary)
 
-		writeByte(&buf, 1)
-		writeInt16(&buf, 2)
-		writeInt16(&buf, int16(FormatBinary))
-		writeInt16(&buf, int16(FormatBinary))
+		var msg CopyInResponse
+		msg.Format = FormatBinary
+		msg.Columns = make([]int16, 2)
+		msg.Columns[0] = ColumnFormatBinary
+		msg.Columns[1] = ColumnFormatBinary
 
-		var m xMessage
-		m.kind = KindCopyInResponse
-		m.data = buf.Bytes()
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result CopyInResponse
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, FormatBinary, result.Format)
-		require.Equal(t, []Format{FormatBinary, FormatBinary}, result.Columns)
+			m, ok := value.(CopyInResponse)
+			require.True(t, ok)
+
+			require.Equal(t, msg, m)
+		})
 	})
 
 	t.Run("CopyOutResponse", func(t *testing.T) {
