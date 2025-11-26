@@ -437,78 +437,159 @@ func TestMessage(t *testing.T) {
 	})
 
 	t.Run("BindComplete", func(t *testing.T) {
-		var m xMessage
-		m.kind = KindBindComplete
-		m.data = []byte{}
+		var data bytes.Buffer
+		writeByte(&data, msgKindBindComplete)
+		writeInt32(&data, 4)
 
-		var result BindComplete
+		t.Run("Write", func(t *testing.T) {
+			var msg BindComplete
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
+
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
+
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(BindComplete)
+			require.True(t, ok)
+
+			var expected BindComplete
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("CloseComplete", func(t *testing.T) {
-		var m xMessage
-		m.kind = KindCloseComplete
-		m.data = []byte{}
+		var data bytes.Buffer
+		writeByte(&data, msgKindCloseComplete)
+		writeInt32(&data, 4)
 
-		var result CloseComplete
+		t.Run("Write", func(t *testing.T) {
+			var msg CloseComplete
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
+
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
+
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(CloseComplete)
+			require.True(t, ok)
+
+			var expected CloseComplete
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("CommandComplete", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindCommandComplete)
+		writeInt32(&data, 17)
+		writeString(&data, "INSERT 11 11")
 
-		writeString(&buf, "INSERT 11 11")
+		t.Run("Write", func(t *testing.T) {
+			var msg CommandComplete
+			msg.Tag = "INSERT 11 11"
 
-		var m xMessage
-		m.kind = KindCommandComplete
-		m.data = buf.Bytes()
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result CommandComplete
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, "INSERT 11 11", result.Tag)
+			m, ok := value.(CommandComplete)
+			require.True(t, ok)
+
+			var expected CommandComplete
+			expected.Tag = "INSERT 11 11"
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("CopyData", func(t *testing.T) {
-		var buf bytes.Buffer
+		var data bytes.Buffer
+		writeByte(&data, msgKindCopyData)
+		writeInt32(&data, 9)
+		writeBytes(&data, []byte("hello"))
 
-		writeBytes(&buf, []byte("hello"))
+		t.Run("Write", func(t *testing.T) {
+			var msg CopyData
+			msg.Data = []byte("hello")
 
-		var m xMessage
-		m.kind = KindCopyData
-		m.data = buf.Bytes()
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
 
-		var result CopyData
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
 
-		require.Equal(t, []byte("hello"), result.Data)
+			m, ok := value.(CopyData)
+			require.True(t, ok)
+
+			var expected CopyData
+			expected.Data = []byte("hello")
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("CopyDone", func(t *testing.T) {
-		var m xMessage
-		m.kind = KindCopyDone
-		m.data = []byte{}
+		var data bytes.Buffer
+		writeByte(&data, msgKindCopyDone)
+		writeInt32(&data, 4)
 
-		var result CopyDone
+		t.Run("Write", func(t *testing.T) {
+			var msg CopyDone
 
-		ok, err := as(m, &result)
-		require.NoError(t, err)
-		require.True(t, ok)
+			var buf bytes.Buffer
+			err := Write(&buf, &msg)
+			require.NoError(t, err)
+
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
+
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(CopyDone)
+			require.True(t, ok)
+
+			var expected CopyDone
+
+			require.Equal(t, expected, m)
+		})
 	})
 
 	t.Run("CopyInResponse", func(t *testing.T) {
+		var data bytes.Buffer
+		writeByte(&data, msgKindCopyInResponse)
+		writeInt32(&data, 11)
+		writeInt8(&data, FormatBinary)
+		writeInt16(&data, 2)
+		writeInt16(&data, int16(FormatBinary))
+		writeInt16(&data, int16(FormatBinary))
 		var buf bytes.Buffer
 
 		writeByte(&buf, 1)

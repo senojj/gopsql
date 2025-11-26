@@ -105,24 +105,21 @@ func ParseField(b byte) (Field, error) {
 	return v, err
 }
 
-type Format int16
-
 const (
-	FormatText   Format = 0
-	FormatBinary Format = 1
+	FormatText   int8 = 0
+	FormatBinary int8 = 1
 )
 
-func ParseFormat(i int16) (Format, error) {
+func ParseFormat(i int8) (Format, error) {
 	var err error
-	v := Format(i)
 
-	switch v {
+	switch i {
 	case FormatText:
 	case FormatBinary:
 	default:
 		err = ErrInvalidValue
 	}
-	return v, err
+	return i, err
 }
 
 type TxStatus byte
