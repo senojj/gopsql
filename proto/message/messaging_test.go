@@ -291,7 +291,7 @@ func TestMessage(t *testing.T) {
 	t.Run("AuthenticationSASL", func(t *testing.T) {
 		var data bytes.Buffer
 		writeByte(&data, msgKindAuthentication)
-		writeInt32(&data, 21)
+		writeInt32(&data, 22)
 		writeInt32(&data, authKindSASL)
 		writeString(&data, "one")
 		writeString(&data, "two")
@@ -658,7 +658,7 @@ func TestMessage(t *testing.T) {
 		var msg DataRow
 		msg.Columns = [][]byte{
 			[]byte("hello"),
-			[]byte(nil),
+			nil,
 			[]byte{},
 			[]byte("world"),
 		}
@@ -835,7 +835,7 @@ func TestMessage(t *testing.T) {
 	t.Run("NegotiateProtocolVersion", func(t *testing.T) {
 		var data bytes.Buffer
 		writeByte(&data, msgKindNegotiateProtocolVersion)
-		writeInt32(&data, 22)
+		writeInt32(&data, 24)
 		writeInt32(&data, 111)      // newest supported minor version
 		writeInt32(&data, 2)        // number of unrecognized protocols
 		writeString(&data, "hello") // first unrecognized protocol
@@ -935,7 +935,7 @@ func TestMessage(t *testing.T) {
 	t.Run("NotificationResponse", func(t *testing.T) {
 		var data bytes.Buffer
 		writeByte(&data, msgKindNotificationResponse)
-		writeInt32(&data, 16)
+		writeInt32(&data, 20)
 		writeInt32(&data, 111)
 		writeString(&data, "hello")
 		writeString(&data, "world")

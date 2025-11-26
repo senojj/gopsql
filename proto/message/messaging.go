@@ -677,6 +677,10 @@ func (x *xDataRow) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt16(&buf, int16(len(x.Columns)))
 	for _, column := range x.Columns {
+		if column == nil {
+			writeInt32(&buf, -1)
+			continue
+		}
 		writeInt32(&buf, int32(len(column)))
 		writeBytes(&buf, column)
 	}
@@ -775,6 +779,11 @@ type xFunctionCallResponse FunctionCallResponse
 
 func (x *xFunctionCallResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
+	if x.Result == nil {
+		writeInt32(&buf, -1)
+	} else {
+		writeInt32(&buf, int32(len(x.Result)))
+	}
 	writeBytes(&buf, x.Result)
 	return writeMessage(w, msgKindFunctionCallResponse, buf.Bytes())
 }
