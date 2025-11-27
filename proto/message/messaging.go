@@ -121,173 +121,81 @@ func Read(r io.Reader) (any, error) {
 	return parseMessage(kind, data)
 }
 
-func Write(w io.Writer, m any) error {
-	var enc encoder
-
-	switch v := m.(type) {
-	case *AuthenticationOk:
-		enc = (*xAuthenticationOk)(v)
-	case *AuthenticationKerberosV5:
-		enc = (*xAuthenticationKerberosV5)(v)
-	case *AuthenticationCleartextPassword:
-		enc = (*xAuthenticationCleartextPassword)(v)
-	case *AuthenticationMD5Password:
-		enc = (*xAuthenticationMD5Password)(v)
-	case *AuthenticationGSS:
-		enc = (*xAuthenticationGSS)(v)
-	case *AuthenticationGSSContinue:
-		enc = (*xAuthenticationGSSContinue)(v)
-	case *AuthenticationSSPI:
-		enc = (*xAuthenticationSSPI)(v)
-	case *AuthenticationSASL:
-		enc = (*xAuthenticationSASL)(v)
-	case *AuthenticationSASLContinue:
-		enc = (*xAuthenticationSASLContinue)(v)
-	case *AuthenticationSASLFinal:
-		enc = (*xAuthenticationSASLFinal)(v)
-	case *BackendKeyData:
-		enc = (*xBackendKeyData)(v)
-	case *BindComplete:
-		enc = (*xBindComplete)(v)
-	case *CloseComplete:
-		enc = (*xCloseComplete)(v)
-	case *CommandComplete:
-		enc = (*xCommandComplete)(v)
-	case *CopyData:
-		enc = (*xCopyData)(v)
-	case *CopyDone:
-		enc = (*xCopyDone)(v)
-	case *CopyInResponse:
-		enc = (*xCopyInResponse)(v)
-	case *CopyOutResponse:
-		enc = (*xCopyOutResponse)(v)
-	case *CopyBothResponse:
-		enc = (*xCopyBothResponse)(v)
-	case *DataRow:
-		enc = (*xDataRow)(v)
-	case *EmptyQueryResponse:
-		enc = (*xEmptyQueryResponse)(v)
-	case *ErrorResponse:
-		enc = (*xErrorResponse)(v)
-	case *FunctionCallResponse:
-		enc = (*xFunctionCallResponse)(v)
-	case *NegotiateProtocolVersion:
-		enc = (*xNegotiateProtocolVersion)(v)
-	case *NoData:
-		enc = (*xNoData)(v)
-	case *NoticeResponse:
-		enc = (*xNoticeResponse)(v)
-	case *NotificationResponse:
-		enc = (*xNotificationResponse)(v)
-	case *ParameterDescription:
-		enc = (*xParameterDescription)(v)
-	case *ParameterStatus:
-		enc = (*xParameterStatus)(v)
-	case *ParseComplete:
-		enc = (*xParseComplete)(v)
-	case *PortalSuspended:
-		enc = (*xPortalSuspended)(v)
-	case *ReadyForQuery:
-		enc = (*xReadyForQuery)(v)
-	case *RowDescription:
-		enc = (*xRowDescription)(v)
-	default:
-		return ErrInvalidValue
-	}
-
-	return enc.Encode(w)
-}
-
-type encoder interface {
+type Encoder interface {
 	Encode(io.Writer) error
 }
 
+type Decoder interface {
+	Decode([]byte) error
+}
+
 func parseAuthentication(kind int32, data []byte) (any, error) {
+	var dec Decoder
+
 	switch kind {
 	case authKindOk:
-		var x xAuthenticationOk
-		err := x.Decode(data)
-		return AuthenticationOk(x), err
+		dec = new(AuthenticationOk)
 	case authKindKerberosV5:
-		var x xAuthenticationKerberosV5
-		err := x.Decode(data)
-		return AuthenticationKerberosV5(x), err
+		dec = new(AuthenticationKerberosV5)
 	case authKindCleartextPassword:
-		var x xAuthenticationCleartextPassword
-		err := x.Decode(data)
-		return AuthenticationCleartextPassword(x), err
+		dec = new(AuthenticationCleartextPassword)
 	case authKindMD5Password:
-		var x xAuthenticationMD5Password
-		err := x.Decode(data)
-		return AuthenticationMD5Password(x), err
+		dec = new(AuthenticationMD5Password)
 	case authKindGSS:
-		var x xAuthenticationGSS
-		err := x.Decode(data)
-		return AuthenticationGSS(x), err
+		dec = new(AuthenticationGSS)
 	case authKindGSSContinue:
-		var x xAuthenticationGSSContinue
-		err := x.Decode(data)
-		return AuthenticationGSSContinue(x), err
+		dec = new(AuthenticationGSSContinue)
 	case authKindSSPI:
-		var x xAuthenticationSSPI
-		err := x.Decode(data)
-		return AuthenticationSSPI(x), err
+		dec = new(AuthenticationSSPI)
 	case authKindSASL:
-		var x xAuthenticationSASL
-		err := x.Decode(data)
-		return AuthenticationSASL(x), err
+		dec = new(AuthenticationSASL)
 	case authKindSASLContinue:
-		var x xAuthenticationSASLContinue
-		err := x.Decode(data)
-		return AuthenticationSASLContinue(x), err
+		dec = new(AuthenticationSASLContinue)
 	case authKindSASLFinal:
-		var x xAuthenticationSASLFinal
-		err := x.Decode(data)
-		return AuthenticationSASLFinal(x), err
+		dec = new(AuthenticationSASLFinal)
 	default:
-		return Unknown{}, nil
+		dec = new(Unknown)
 	}
+	err := dec.Decode(data)
+	if err != nil {
+		return nil, err
+	}
+	return dec, nil
 }
 
 type AuthenticationOk struct{}
 
-type xAuthenticationOk AuthenticationOk
-
-func (x *xAuthenticationOk) Encode(w io.Writer) error {
+func (x *AuthenticationOk) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, authKindOk)
 	return writeMessage(w, msgKindAuthentication, buf.Bytes())
 }
 
-func (x *xAuthenticationOk) Decode(_ []byte) error {
+func (x *AuthenticationOk) Decode(_ []byte) error {
 	return nil
 }
 
 type AuthenticationKerberosV5 struct{}
 
-type xAuthenticationKerberosV5 AuthenticationKerberosV5
-
-func (x *xAuthenticationKerberosV5) Encode(w io.Writer) error {
+func (x *AuthenticationKerberosV5) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, authKindKerberosV5)
 	return writeMessage(w, msgKindAuthentication, buf.Bytes())
 }
 
-func (x *xAuthenticationKerberosV5) Decode(_ []byte) error {
+func (x *AuthenticationKerberosV5) Decode(_ []byte) error {
 	return nil
 }
 
 type AuthenticationCleartextPassword struct{}
 
-type xAuthenticationCleartextPassword AuthenticationCleartextPassword
-
-func (x *xAuthenticationCleartextPassword) Encode(w io.Writer) error {
+func (x *AuthenticationCleartextPassword) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, authKindCleartextPassword)
 	return writeMessage(w, msgKindAuthentication, buf.Bytes())
 }
 
-func (x *xAuthenticationCleartextPassword) Decode(_ []byte) error {
+func (x *AuthenticationCleartextPassword) Decode(_ []byte) error {
 	return nil
 }
 
@@ -295,31 +203,27 @@ type AuthenticationMD5Password struct {
 	Salt [4]byte
 }
 
-type xAuthenticationMD5Password AuthenticationMD5Password
-
-func (x *xAuthenticationMD5Password) Encode(w io.Writer) error {
+func (x *AuthenticationMD5Password) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, authKindMD5Password)
 	writeBytes(&buf, x.Salt[:])
 	return writeMessage(w, msgKindAuthentication, buf.Bytes())
 }
 
-func (x *xAuthenticationMD5Password) Decode(b []byte) error {
+func (x *AuthenticationMD5Password) Decode(b []byte) error {
 	copy(x.Salt[:], b)
 	return nil
 }
 
 type AuthenticationGSS struct{}
 
-type xAuthenticationGSS AuthenticationGSS
-
-func (x *xAuthenticationGSS) Encode(w io.Writer) error {
+func (x *AuthenticationGSS) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, authKindGSS)
 	return writeMessage(w, msgKindAuthentication, buf.Bytes())
 }
 
-func (x *xAuthenticationGSS) Decode(_ []byte) error {
+func (x *AuthenticationGSS) Decode(_ []byte) error {
 	return nil
 }
 
@@ -327,16 +231,14 @@ type AuthenticationGSSContinue struct {
 	Data []byte
 }
 
-type xAuthenticationGSSContinue AuthenticationGSSContinue
-
-func (x *xAuthenticationGSSContinue) Encode(w io.Writer) error {
+func (x *AuthenticationGSSContinue) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, authKindGSSContinue)
 	writeBytes(&buf, x.Data)
 	return writeMessage(w, msgKindAuthentication, buf.Bytes())
 }
 
-func (x *xAuthenticationGSSContinue) Decode(b []byte) error {
+func (x *AuthenticationGSSContinue) Decode(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
 	return nil
@@ -344,15 +246,13 @@ func (x *xAuthenticationGSSContinue) Decode(b []byte) error {
 
 type AuthenticationSSPI struct{}
 
-type xAuthenticationSSPI AuthenticationSSPI
-
-func (x *xAuthenticationSSPI) Encode(w io.Writer) error {
+func (x *AuthenticationSSPI) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, authKindSSPI)
 	return writeMessage(w, msgKindAuthentication, buf.Bytes())
 }
 
-func (x *xAuthenticationSSPI) Decode(_ []byte) error {
+func (x *AuthenticationSSPI) Decode(_ []byte) error {
 	return nil
 }
 
@@ -360,9 +260,7 @@ type AuthenticationSASL struct {
 	Mechanisms []string
 }
 
-type xAuthenticationSASL AuthenticationSASL
-
-func (x *xAuthenticationSASL) Encode(w io.Writer) error {
+func (x *AuthenticationSASL) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, authKindSASL)
 	for i := range len(x.Mechanisms) {
@@ -371,7 +269,7 @@ func (x *xAuthenticationSASL) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindAuthentication, buf.Bytes())
 }
 
-func (x *xAuthenticationSASL) Decode(b []byte) error {
+func (x *AuthenticationSASL) Decode(b []byte) error {
 	for len(b) > 1 {
 		var mechanism string
 		bread, err := readString(b, &mechanism)
@@ -388,16 +286,14 @@ type AuthenticationSASLContinue struct {
 	Data []byte
 }
 
-type xAuthenticationSASLContinue AuthenticationSASLContinue
-
-func (x *xAuthenticationSASLContinue) Encode(w io.Writer) error {
+func (x *AuthenticationSASLContinue) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, authKindSASLContinue)
 	writeBytes(&buf, x.Data)
 	return writeMessage(w, msgKindAuthentication, buf.Bytes())
 }
 
-func (x *xAuthenticationSASLContinue) Decode(b []byte) error {
+func (x *AuthenticationSASLContinue) Decode(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
 	return nil
@@ -407,16 +303,14 @@ type AuthenticationSASLFinal struct {
 	Data []byte
 }
 
-type xAuthenticationSASLFinal AuthenticationSASLFinal
-
-func (x *xAuthenticationSASLFinal) Encode(w io.Writer) error {
+func (x *AuthenticationSASLFinal) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, authKindSASLFinal)
 	writeBytes(&buf, x.Data)
 	return writeMessage(w, msgKindAuthentication, buf.Bytes())
 }
 
-func (x *xAuthenticationSASLFinal) Decode(b []byte) error {
+func (x *AuthenticationSASLFinal) Decode(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
 	return nil
@@ -427,16 +321,14 @@ type BackendKeyData struct {
 	SecretKey []byte
 }
 
-type xBackendKeyData BackendKeyData
-
-func (x *xBackendKeyData) Encode(w io.Writer) error {
+func (x *BackendKeyData) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, x.ProcessID)
 	writeBytes(&buf, x.SecretKey)
 	return writeMessage(w, msgKindKeyData, buf.Bytes())
 }
 
-func (x *xBackendKeyData) Decode(b []byte) error {
+func (x *BackendKeyData) Decode(b []byte) error {
 	bread, err := readInt32(b, &x.ProcessID)
 	if err != nil {
 		return err
@@ -457,25 +349,21 @@ func (x *xBackendKeyData) Decode(b []byte) error {
 
 type BindComplete struct{}
 
-type xBindComplete BindComplete
-
-func (x *xBindComplete) Encode(w io.Writer) error {
+func (x *BindComplete) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindBindComplete, []byte{})
 }
 
-func (x *xBindComplete) Decode(_ []byte) error {
+func (x *BindComplete) Decode(_ []byte) error {
 	return nil
 }
 
 type CloseComplete struct{}
 
-type xCloseComplete CloseComplete
-
-func (x *xCloseComplete) Encode(w io.Writer) error {
+func (x *CloseComplete) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindCloseComplete, []byte{})
 }
 
-func (x *xCloseComplete) Decode(_ []byte) error {
+func (x *CloseComplete) Decode(_ []byte) error {
 	return nil
 }
 
@@ -483,15 +371,13 @@ type CommandComplete struct {
 	Tag string
 }
 
-type xCommandComplete CommandComplete
-
-func (x *xCommandComplete) Encode(w io.Writer) error {
+func (x *CommandComplete) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeString(&buf, x.Tag)
 	return writeMessage(w, msgKindCommandComplete, buf.Bytes())
 }
 
-func (x *xCommandComplete) Decode(b []byte) error {
+func (x *CommandComplete) Decode(b []byte) error {
 	_, err := readString(b, &x.Tag)
 	return err
 }
@@ -500,15 +386,13 @@ type CopyData struct {
 	Data []byte
 }
 
-type xCopyData CopyData
-
-func (x *xCopyData) Encode(w io.Writer) error {
+func (x *CopyData) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeBytes(&buf, x.Data)
 	return writeMessage(w, msgKindCopyData, buf.Bytes())
 }
 
-func (x *xCopyData) Decode(b []byte) error {
+func (x *CopyData) Decode(b []byte) error {
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)
 	return nil
@@ -516,13 +400,11 @@ func (x *xCopyData) Decode(b []byte) error {
 
 type CopyDone struct{}
 
-type xCopyDone CopyDone
-
-func (x *xCopyDone) Encode(w io.Writer) error {
+func (x *CopyDone) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindCopyDone, []byte{})
 }
 
-func (x *xCopyDone) Decode(_ []byte) error {
+func (x *CopyDone) Decode(_ []byte) error {
 	return nil
 }
 
@@ -531,9 +413,7 @@ type CopyInResponse struct {
 	Columns []int16
 }
 
-type xCopyInResponse CopyInResponse
-
-func (x *xCopyInResponse) Encode(w io.Writer) error {
+func (x *CopyInResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt8(&buf, x.Format)
 	writeInt16(&buf, int16(len(x.Columns)))
@@ -543,7 +423,7 @@ func (x *xCopyInResponse) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindCopyInResponse, buf.Bytes())
 }
 
-func (x *xCopyInResponse) Decode(b []byte) error {
+func (x *CopyInResponse) Decode(b []byte) error {
 	bread, err := readInt8(b, &x.Format)
 	if err != nil {
 		return err
@@ -577,9 +457,7 @@ type CopyOutResponse struct {
 	Columns []int16
 }
 
-type xCopyOutResponse CopyOutResponse
-
-func (x *xCopyOutResponse) Encode(w io.Writer) error {
+func (x *CopyOutResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt8(&buf, x.Format)
 	writeInt16(&buf, int16(len(x.Columns)))
@@ -589,7 +467,7 @@ func (x *xCopyOutResponse) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindCopyOutResponse, buf.Bytes())
 }
 
-func (x *xCopyOutResponse) Decode(b []byte) error {
+func (x *CopyOutResponse) Decode(b []byte) error {
 	bread, err := readInt8(b, &x.Format)
 	if err != nil {
 		return err
@@ -623,9 +501,7 @@ type CopyBothResponse struct {
 	Columns []int16
 }
 
-type xCopyBothResponse CopyBothResponse
-
-func (x *xCopyBothResponse) Encode(w io.Writer) error {
+func (x *CopyBothResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt8(&buf, x.Format)
 	writeInt16(&buf, int16(len(x.Columns)))
@@ -635,7 +511,7 @@ func (x *xCopyBothResponse) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindCopyBothResponse, buf.Bytes())
 }
 
-func (x *xCopyBothResponse) Decode(b []byte) error {
+func (x *CopyBothResponse) Decode(b []byte) error {
 	bread, err := readInt8(b, &x.Format)
 	if err != nil {
 		return err
@@ -671,9 +547,7 @@ type DataRow struct {
 	Columns [][]byte
 }
 
-type xDataRow DataRow
-
-func (x *xDataRow) Encode(w io.Writer) error {
+func (x *DataRow) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt16(&buf, int16(len(x.Columns)))
 	for _, column := range x.Columns {
@@ -687,7 +561,7 @@ func (x *xDataRow) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindDataRow, buf.Bytes())
 }
 
-func (x *xDataRow) Decode(b []byte) error {
+func (x *DataRow) Decode(b []byte) error {
 	var columns int16
 	bread, err := readInt16(b, &columns)
 	if err != nil {
@@ -717,13 +591,11 @@ func (x *xDataRow) Decode(b []byte) error {
 
 type EmptyQueryResponse struct{}
 
-type xEmptyQueryResponse EmptyQueryResponse
-
-func (x *xEmptyQueryResponse) Encode(w io.Writer) error {
+func (x *EmptyQueryResponse) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindEmptyQueryResponse, []byte{})
 }
 
-func (x *xEmptyQueryResponse) Decode(_ []byte) error {
+func (x *EmptyQueryResponse) Decode(_ []byte) error {
 	return nil
 }
 
@@ -732,9 +604,7 @@ type ErrorResponse struct {
 	Values []string
 }
 
-type xErrorResponse ErrorResponse
-
-func (x *xErrorResponse) Encode(w io.Writer) error {
+func (x *ErrorResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	for i := range len(x.Fields) {
 		writeByte(&buf, x.Fields[i])
@@ -744,7 +614,7 @@ func (x *xErrorResponse) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindErrorResponse, buf.Bytes())
 }
 
-func (x *xErrorResponse) Decode(b []byte) error {
+func (x *ErrorResponse) Decode(b []byte) error {
 	var field byte
 	bread, err := readByte(b, &field)
 	if err != nil {
@@ -775,9 +645,7 @@ type FunctionCallResponse struct {
 	Result []byte
 }
 
-type xFunctionCallResponse FunctionCallResponse
-
-func (x *xFunctionCallResponse) Encode(w io.Writer) error {
+func (x *FunctionCallResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	if x.Result == nil {
 		writeInt32(&buf, -1)
@@ -788,7 +656,7 @@ func (x *xFunctionCallResponse) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindFunctionCallResponse, buf.Bytes())
 }
 
-func (x *xFunctionCallResponse) Decode(b []byte) error {
+func (x *FunctionCallResponse) Decode(b []byte) error {
 	var length int32
 	bread, err := readInt32(b, &length)
 	if err != nil {
@@ -809,9 +677,7 @@ type NegotiateProtocolVersion struct {
 	UnrecognizedOptions   []string
 }
 
-type xNegotiateProtocolVersion NegotiateProtocolVersion
-
-func (x *xNegotiateProtocolVersion) Encode(w io.Writer) error {
+func (x *NegotiateProtocolVersion) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, x.MinorVersionSupported)
 	writeInt32(&buf, int32(len(x.UnrecognizedOptions)))
@@ -821,7 +687,7 @@ func (x *xNegotiateProtocolVersion) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindNegotiateProtocolVersion, buf.Bytes())
 }
 
-func (x *xNegotiateProtocolVersion) Decode(b []byte) error {
+func (x *NegotiateProtocolVersion) Decode(b []byte) error {
 	bread, err := readInt32(b, &x.MinorVersionSupported)
 	if err != nil {
 		return err
@@ -851,13 +717,11 @@ func (x *xNegotiateProtocolVersion) Decode(b []byte) error {
 
 type NoData struct{}
 
-type xNoData NoData
-
-func (x *xNoData) Encode(w io.Writer) error {
+func (x *NoData) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindNoData, []byte{})
 }
 
-func (x *xNoData) Decode(_ []byte) error {
+func (x *NoData) Decode(_ []byte) error {
 	return nil
 }
 
@@ -866,9 +730,7 @@ type NoticeResponse struct {
 	Values []string
 }
 
-type xNoticeResponse NoticeResponse
-
-func (x *xNoticeResponse) Encode(w io.Writer) error {
+func (x *NoticeResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	for i := range len(x.Fields) {
 		writeByte(&buf, x.Fields[i])
@@ -878,7 +740,7 @@ func (x *xNoticeResponse) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindNoticeResponse, buf.Bytes())
 }
 
-func (x *xNoticeResponse) Decode(b []byte) error {
+func (x *NoticeResponse) Decode(b []byte) error {
 	var field byte
 	bread, err := readByte(b, &field)
 	if err != nil {
@@ -910,9 +772,7 @@ type NotificationResponse struct {
 	Payload   string
 }
 
-type xNotificationResponse NotificationResponse
-
-func (x *xNotificationResponse) Encode(w io.Writer) error {
+func (x *NotificationResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, x.ProcessID)
 	writeString(&buf, x.Channel)
@@ -920,7 +780,7 @@ func (x *xNotificationResponse) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindNotificationResponse, buf.Bytes())
 }
 
-func (x *xNotificationResponse) Decode(b []byte) error {
+func (x *NotificationResponse) Decode(b []byte) error {
 	bread, err := readInt32(b, &x.ProcessID)
 	if err != nil {
 		return err
@@ -944,9 +804,7 @@ type ParameterDescription struct {
 	Parameters []int32
 }
 
-type xParameterDescription ParameterDescription
-
-func (x *xParameterDescription) Encode(w io.Writer) error {
+func (x *ParameterDescription) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt16(&buf, int16(len(x.Parameters)))
 	for _, param := range x.Parameters {
@@ -955,7 +813,7 @@ func (x *xParameterDescription) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindParameterDescription, buf.Bytes())
 }
 
-func (x *xParameterDescription) Decode(b []byte) error {
+func (x *ParameterDescription) Decode(b []byte) error {
 	var length int16
 	bread, err := readInt16(b, &length)
 	if err != nil {
@@ -982,16 +840,14 @@ type ParameterStatus struct {
 	Value string
 }
 
-type xParameterStatus ParameterStatus
-
-func (x *xParameterStatus) Encode(w io.Writer) error {
+func (x *ParameterStatus) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeString(&buf, x.Name)
 	writeString(&buf, x.Value)
 	return writeMessage(w, msgKindParameterStatus, buf.Bytes())
 }
 
-func (x *xParameterStatus) Decode(b []byte) error {
+func (x *ParameterStatus) Decode(b []byte) error {
 	bread, err := readString(b, &x.Name)
 	if err != nil {
 		return err
@@ -1007,25 +863,21 @@ func (x *xParameterStatus) Decode(b []byte) error {
 
 type ParseComplete struct{}
 
-type xParseComplete ParseComplete
-
-func (x *xParseComplete) Encode(w io.Writer) error {
+func (x *ParseComplete) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindParseComplete, []byte{})
 }
 
-func (x *xParseComplete) Decode(_ []byte) error {
+func (x *ParseComplete) Decode(_ []byte) error {
 	return nil
 }
 
 type PortalSuspended struct{}
 
-type xPortalSuspended PortalSuspended
-
-func (x *xPortalSuspended) Encode(w io.Writer) error {
+func (x *PortalSuspended) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindPortalSuspended, []byte{})
 }
 
-func (x *xPortalSuspended) Decode(_ []byte) error {
+func (x *PortalSuspended) Decode(_ []byte) error {
 	return nil
 }
 
@@ -1033,15 +885,13 @@ type ReadyForQuery struct {
 	TxStatus byte
 }
 
-type xReadyForQuery ReadyForQuery
-
-func (x *xReadyForQuery) Encode(w io.Writer) error {
+func (x *ReadyForQuery) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeByte(&buf, x.TxStatus)
 	return writeMessage(w, msgKindReadyForQuery, buf.Bytes())
 }
 
-func (x *xReadyForQuery) Decode(b []byte) error {
+func (x *ReadyForQuery) Decode(b []byte) error {
 	_, err := readByte(b, &x.TxStatus)
 	if err != nil {
 		return err
@@ -1059,9 +909,7 @@ type RowDescription struct {
 	Formats   []int16
 }
 
-type xRowDescription RowDescription
-
-func (x *xRowDescription) Encode(w io.Writer) error {
+func (x *RowDescription) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt16(&buf, int16(len(x.Names)))
 	for i := range len(x.Names) {
@@ -1076,7 +924,7 @@ func (x *xRowDescription) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindRowDescription, buf.Bytes())
 }
 
-func (x *xRowDescription) Decode(b []byte) error {
+func (x *RowDescription) Decode(b []byte) error {
 	var length int16
 	bread, err := readInt16(b, &length)
 	if err != nil {
@@ -1140,7 +988,17 @@ func (x *xRowDescription) Decode(b []byte) error {
 
 type Unknown struct{}
 
+func (x *Unknown) Encode(_ io.Writer) error {
+	return ErrInvalidValue
+}
+
+func (x *Unknown) Decode(_ []byte) error {
+	return ErrInvalidValue
+}
+
 func parseMessage(kind byte, data []byte) (any, error) {
+	var dec Decoder
+
 	switch kind {
 	case msgKindAuthentication:
 		var k int32
@@ -1151,100 +1009,59 @@ func parseMessage(kind byte, data []byte) (any, error) {
 		d := data[bread:]
 		return parseAuthentication(k, d)
 	case msgKindKeyData:
-		var x xBackendKeyData
-		err := x.Decode(data)
-		return BackendKeyData(x), err
+		dec = new(BackendKeyData)
 	case msgKindBindComplete:
-		var x xBindComplete
-		err := x.Decode(data)
-		return BindComplete(x), err
+		dec = new(BindComplete)
 	case msgKindCloseComplete:
-		var x xCloseComplete
-		err := x.Decode(data)
-		return CloseComplete(x), err
+		dec = new(CloseComplete)
 	case msgKindCommandComplete:
-		var x xCommandComplete
-		err := x.Decode(data)
-		return CommandComplete(x), err
+		dec = new(CommandComplete)
 	case msgKindCopyData:
-		var x xCopyData
-		err := x.Decode(data)
-		return CopyData(x), err
+		dec = new(CopyData)
 	case msgKindCopyDone:
-		var x xCopyDone
-		err := x.Decode(data)
-		return CopyDone(x), err
+		dec = new(CopyDone)
 	case msgKindCopyInResponse:
-		var x xCopyInResponse
-		err := x.Decode(data)
-		return CopyInResponse(x), err
+		dec = new(CopyInResponse)
 	case msgKindCopyOutResponse:
-		var x xCopyOutResponse
-		err := x.Decode(data)
-		return CopyOutResponse(x), err
+		dec = new(CopyOutResponse)
 	case msgKindCopyBothResponse:
-		var x xCopyBothResponse
-		err := x.Decode(data)
-		return CopyBothResponse(x), err
+		dec = new(CopyBothResponse)
 	case msgKindDataRow:
-		var x xDataRow
-		err := x.Decode(data)
-		return DataRow(x), err
+		dec = new(DataRow)
 	case msgKindEmptyQueryResponse:
-		var x xEmptyQueryResponse
-		err := x.Decode(data)
-		return EmptyQueryResponse(x), err
+		dec = new(EmptyQueryResponse)
 	case msgKindErrorResponse:
-		var x xErrorResponse
-		err := x.Decode(data)
-		return ErrorResponse(x), err
+		dec = new(ErrorResponse)
 	case msgKindFunctionCallResponse:
-		var x xFunctionCallResponse
-		err := x.Decode(data)
-		return FunctionCallResponse(x), err
+		dec = new(FunctionCallResponse)
 	case msgKindNegotiateProtocolVersion:
-		var x xNegotiateProtocolVersion
-		err := x.Decode(data)
-		return NegotiateProtocolVersion(x), err
+		dec = new(NegotiateProtocolVersion)
 	case msgKindNoData:
-		var x xNoData
-		err := x.Decode(data)
-		return NoData(x), err
+		dec = new(NoData)
 	case msgKindNoticeResponse:
-		var x xNoticeResponse
-		err := x.Decode(data)
-		return NoticeResponse(x), err
+		dec = new(NoticeResponse)
 	case msgKindNotificationResponse:
-		var x xNotificationResponse
-		err := x.Decode(data)
-		return NotificationResponse(x), err
+		dec = new(NotificationResponse)
 	case msgKindParameterDescription:
-		var x xParameterDescription
-		err := x.Decode(data)
-		return ParameterDescription(x), err
+		dec = new(ParameterDescription)
 	case msgKindParameterStatus:
-		var x xParameterStatus
-		err := x.Decode(data)
-		return ParameterStatus(x), err
+		dec = new(ParameterStatus)
 	case msgKindParseComplete:
-		var x xParseComplete
-		err := x.Decode(data)
-		return ParseComplete(x), err
+		dec = new(ParseComplete)
 	case msgKindPortalSuspended:
-		var x xPortalSuspended
-		err := x.Decode(data)
-		return PortalSuspended(x), err
+		dec = new(PortalSuspended)
 	case msgKindReadyForQuery:
-		var x xReadyForQuery
-		err := x.Decode(data)
-		return ReadyForQuery(x), err
+		dec = new(ReadyForQuery)
 	case msgKindRowDescription:
-		var x xRowDescription
-		err := x.Decode(data)
-		return RowDescription(x), err
+		dec = new(RowDescription)
 	default:
-		return Unknown{}, nil
+		dec = new(Unknown)
 	}
+	err := dec.Decode(data)
+	if err != nil {
+		return nil, err
+	}
+	return dec, nil
 }
 
 func readByte(b []byte, v *byte) (int, error) {

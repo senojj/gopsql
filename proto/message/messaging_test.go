@@ -105,7 +105,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -115,10 +115,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(AuthenticationOk)
+			m, ok := value.(*AuthenticationOk)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -132,7 +132,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -142,10 +142,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(AuthenticationKerberosV5)
+			m, ok := value.(*AuthenticationKerberosV5)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -159,7 +159,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -169,10 +169,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(AuthenticationCleartextPassword)
+			m, ok := value.(*AuthenticationCleartextPassword)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -188,7 +188,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -198,10 +198,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(AuthenticationMD5Password)
+			m, ok := value.(*AuthenticationMD5Password)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -215,7 +215,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -225,10 +225,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(AuthenticationGSS)
+			m, ok := value.(*AuthenticationGSS)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -244,7 +244,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -254,10 +254,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(AuthenticationGSSContinue)
+			m, ok := value.(*AuthenticationGSSContinue)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -271,7 +271,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -281,10 +281,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(AuthenticationSSPI)
+			m, ok := value.(*AuthenticationSSPI)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -302,7 +302,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -312,10 +312,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(AuthenticationSASL)
+			m, ok := value.(*AuthenticationSASL)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -331,7 +331,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -341,10 +341,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(AuthenticationSASLContinue)
+			m, ok := value.(*AuthenticationSASLContinue)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -360,7 +360,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -370,10 +370,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(AuthenticationSASLFinal)
+			m, ok := value.(*AuthenticationSASLFinal)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -390,7 +390,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -400,10 +400,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(BackendKeyData)
+			m, ok := value.(*BackendKeyData)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -416,7 +416,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -426,10 +426,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(BindComplete)
+			m, ok := value.(*BindComplete)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -442,7 +442,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -452,10 +452,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(CloseComplete)
+			m, ok := value.(*CloseComplete)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -470,7 +470,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -480,10 +480,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(CommandComplete)
+			m, ok := value.(*CommandComplete)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -498,7 +498,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -508,10 +508,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(CopyData)
+			m, ok := value.(*CopyData)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -524,7 +524,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -534,10 +534,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(CopyDone)
+			m, ok := value.(*CopyDone)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -558,7 +558,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -568,10 +568,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(CopyInResponse)
+			m, ok := value.(*CopyInResponse)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -592,7 +592,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -602,10 +602,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(CopyOutResponse)
+			m, ok := value.(*CopyOutResponse)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -626,7 +626,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -636,10 +636,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(CopyBothResponse)
+			m, ok := value.(*CopyBothResponse)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -665,7 +665,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -675,10 +675,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(DataRow)
+			m, ok := value.(*DataRow)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -691,7 +691,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -701,10 +701,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(EmptyQueryResponse)
+			m, ok := value.(*EmptyQueryResponse)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -730,7 +730,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -740,10 +740,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(ErrorResponse)
+			m, ok := value.(*ErrorResponse)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -776,7 +776,7 @@ func TestMessage(t *testing.T) {
 		t.Run("Write", func(t *testing.T) {
 			t.Run("Nil", func(t *testing.T) {
 				var buf bytes.Buffer
-				err := Write(&buf, &msgNil)
+				err := msgNil.Encode(&buf)
 				require.NoError(t, err)
 
 				require.Equal(t, dataNil.Bytes(), buf.Bytes())
@@ -784,7 +784,7 @@ func TestMessage(t *testing.T) {
 
 			t.Run("Zero", func(t *testing.T) {
 				var buf bytes.Buffer
-				err := Write(&buf, &msgZero)
+				err := msgZero.Encode(&buf)
 				require.NoError(t, err)
 
 				require.Equal(t, dataZero.Bytes(), buf.Bytes())
@@ -792,7 +792,7 @@ func TestMessage(t *testing.T) {
 
 			t.Run("Present", func(t *testing.T) {
 				var buf bytes.Buffer
-				err := Write(&buf, &msgPresent)
+				err := msgPresent.Encode(&buf)
 				require.NoError(t, err)
 
 				require.Equal(t, dataPresent.Bytes(), buf.Bytes())
@@ -804,30 +804,30 @@ func TestMessage(t *testing.T) {
 				value, err := Read(&dataNil)
 				require.NoError(t, err)
 
-				m, ok := value.(FunctionCallResponse)
+				m, ok := value.(*FunctionCallResponse)
 				require.True(t, ok)
 
-				require.Equal(t, msgNil, m)
+				require.Equal(t, &msgNil, m)
 			})
 
 			t.Run("Zero", func(t *testing.T) {
 				value, err := Read(&dataZero)
 				require.NoError(t, err)
 
-				m, ok := value.(FunctionCallResponse)
+				m, ok := value.(*FunctionCallResponse)
 				require.True(t, ok)
 
-				require.Equal(t, msgZero, m)
+				require.Equal(t, &msgZero, m)
 			})
 
 			t.Run("Present", func(t *testing.T) {
 				value, err := Read(&dataPresent)
 				require.NoError(t, err)
 
-				m, ok := value.(FunctionCallResponse)
+				m, ok := value.(*FunctionCallResponse)
 				require.True(t, ok)
 
-				require.Equal(t, msgPresent, m)
+				require.Equal(t, &msgPresent, m)
 			})
 		})
 	})
@@ -850,7 +850,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -860,10 +860,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(NegotiateProtocolVersion)
+			m, ok := value.(*NegotiateProtocolVersion)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -876,7 +876,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -886,10 +886,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(NoData)
+			m, ok := value.(*NoData)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -915,7 +915,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -925,10 +925,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(NoticeResponse)
+			m, ok := value.(*NoticeResponse)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -947,7 +947,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -957,10 +957,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(NotificationResponse)
+			m, ok := value.(*NotificationResponse)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -980,7 +980,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -990,10 +990,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(ParameterDescription)
+			m, ok := value.(*ParameterDescription)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -1010,7 +1010,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -1020,10 +1020,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(ParameterStatus)
+			m, ok := value.(*ParameterStatus)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -1036,7 +1036,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -1046,10 +1046,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(ParseComplete)
+			m, ok := value.(*ParseComplete)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -1062,7 +1062,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -1072,10 +1072,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(PortalSuspended)
+			m, ok := value.(*PortalSuspended)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -1090,7 +1090,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -1100,10 +1100,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(ReadyForQuery)
+			m, ok := value.(*ReadyForQuery)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 
@@ -1161,7 +1161,7 @@ func TestMessage(t *testing.T) {
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
-			err := Write(&buf, &msg)
+			err := msg.Encode(&buf)
 			require.NoError(t, err)
 
 			require.Equal(t, data.Bytes(), buf.Bytes())
@@ -1171,10 +1171,10 @@ func TestMessage(t *testing.T) {
 			value, err := Read(&data)
 			require.NoError(t, err)
 
-			m, ok := value.(RowDescription)
+			m, ok := value.(*RowDescription)
 			require.True(t, ok)
 
-			require.Equal(t, msg, m)
+			require.Equal(t, &msg, m)
 		})
 	})
 }
