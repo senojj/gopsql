@@ -15,7 +15,7 @@ var (
 
 const (
 	msgKindAuthentication           byte = 'R'
-	msgKindKeyData                  byte = 'K'
+	msgKindBackendKeyData           byte = 'K'
 	msgKindBindComplete             byte = '2'
 	msgKindCloseComplete            byte = '3'
 	msgKindCommandComplete          byte = 'C'
@@ -291,7 +291,7 @@ func (x *BackendKeyData) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	writeInt32(&buf, x.ProcessID)
 	writeBytes(&buf, x.SecretKey)
-	return writeMessage(w, msgKindKeyData, buf.Bytes())
+	return writeMessage(w, msgKindBackendKeyData, buf.Bytes())
 }
 
 func (x *BackendKeyData) Decode(b []byte) error {
@@ -974,7 +974,7 @@ func parseMessage(kind byte, data []byte) (any, error) {
 		}
 		d := data[bread:]
 		return parseAuthentication(k, d)
-	case msgKindKeyData:
+	case msgKindBackendKeyData:
 		dec = new(BackendKeyData)
 	case msgKindBindComplete:
 		dec = new(BindComplete)
