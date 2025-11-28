@@ -1177,4 +1177,45 @@ func TestMessage(t *testing.T) {
 			require.Equal(t, &msg, m)
 		})
 	})
+
+	t.Run("UnknownMessage", func(t *testing.T) {
+		var data bytes.Buffer
+		writeByte(&data, 0x0)
+		writeInt32(&data, 4)
+
+		var msg Unknown
+
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := msg.Encode(&buf)
+			require.ErrorIs(t, err, ErrInvalidValue)
+		})
+
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.ErrorIs(t, err, ErrInvalidValue)
+			require.Nil(t, value)
+		})
+	})
+
+	t.Run("UnknownAuthentication", func(t *testing.T) {
+		var data bytes.Buffer
+		writeByte(&data, msgKindAuthentication)
+		writeInt32(&data, 8)
+		writeInt32(&data, -1)
+
+		var msg Unknown
+
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := msg.Encode(&buf)
+			require.ErrorIs(t, err, ErrInvalidValue)
+		})
+
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.ErrorIs(t, err, ErrInvalidValue)
+			require.Nil(t, value)
+		})
+	})
 }
