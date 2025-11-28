@@ -129,40 +129,6 @@ type Decoder interface {
 	Decode([]byte) error
 }
 
-func parseAuthentication(kind int32, data []byte) (any, error) {
-	var dec Decoder
-
-	switch kind {
-	case authKindOk:
-		dec = new(AuthenticationOk)
-	case authKindKerberosV5:
-		dec = new(AuthenticationKerberosV5)
-	case authKindCleartextPassword:
-		dec = new(AuthenticationCleartextPassword)
-	case authKindMD5Password:
-		dec = new(AuthenticationMD5Password)
-	case authKindGSS:
-		dec = new(AuthenticationGSS)
-	case authKindGSSContinue:
-		dec = new(AuthenticationGSSContinue)
-	case authKindSSPI:
-		dec = new(AuthenticationSSPI)
-	case authKindSASL:
-		dec = new(AuthenticationSASL)
-	case authKindSASLContinue:
-		dec = new(AuthenticationSASLContinue)
-	case authKindSASLFinal:
-		dec = new(AuthenticationSASLFinal)
-	default:
-		dec = new(Unknown)
-	}
-	err := dec.Decode(data)
-	if err != nil {
-		return nil, err
-	}
-	return dec, nil
-}
-
 type AuthenticationOk struct{}
 
 func (x *AuthenticationOk) Encode(w io.Writer) error {
@@ -1054,6 +1020,40 @@ func parseMessage(kind byte, data []byte) (any, error) {
 		dec = new(ReadyForQuery)
 	case msgKindRowDescription:
 		dec = new(RowDescription)
+	default:
+		dec = new(Unknown)
+	}
+	err := dec.Decode(data)
+	if err != nil {
+		return nil, err
+	}
+	return dec, nil
+}
+
+func parseAuthentication(kind int32, data []byte) (any, error) {
+	var dec Decoder
+
+	switch kind {
+	case authKindOk:
+		dec = new(AuthenticationOk)
+	case authKindKerberosV5:
+		dec = new(AuthenticationKerberosV5)
+	case authKindCleartextPassword:
+		dec = new(AuthenticationCleartextPassword)
+	case authKindMD5Password:
+		dec = new(AuthenticationMD5Password)
+	case authKindGSS:
+		dec = new(AuthenticationGSS)
+	case authKindGSSContinue:
+		dec = new(AuthenticationGSSContinue)
+	case authKindSSPI:
+		dec = new(AuthenticationSSPI)
+	case authKindSASL:
+		dec = new(AuthenticationSASL)
+	case authKindSASLContinue:
+		dec = new(AuthenticationSASLContinue)
+	case authKindSASLFinal:
+		dec = new(AuthenticationSASLFinal)
 	default:
 		dec = new(Unknown)
 	}
