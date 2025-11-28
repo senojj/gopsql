@@ -379,7 +379,7 @@ func TestMessage(t *testing.T) {
 
 	t.Run("BackendKeyData", func(t *testing.T) {
 		var data bytes.Buffer
-		writeByte(&data, msgKindKeyData)
+		writeByte(&data, msgKindBackendKeyData)
 		writeInt32(&data, 13)
 		writeInt32(&data, 111)
 		writeBytes(&data, []byte("hello"))

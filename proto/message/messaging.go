@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"math"
 )
 
 var (
@@ -16,6 +17,7 @@ var (
 const (
 	msgKindAuthentication           byte = 'R'
 	msgKindBackendKeyData           byte = 'K'
+	msgKindBind                     byte = 'B'
 	msgKindBindComplete             byte = '2'
 	msgKindCloseComplete            byte = '3'
 	msgKindCommandComplete          byte = 'C'
@@ -310,6 +312,49 @@ func (x *BackendKeyData) Decode(b []byte) error {
 	}
 	x.SecretKey = make([]byte, len(b))
 	copy(x.SecretKey, b)
+	return nil
+}
+
+type Bind struct {
+	DestinationName      string
+	SourceName           string
+	ParameterFormatCodes []int16
+	ParameterData        [][]byte
+	ColumnFormatCodes    []int16
+}
+
+func (x *Bind) Encode(w io.Writer) error {
+	var buf bytes.Buffer
+	writeString(&buf, x.DestinationName)
+	writeString(&buf, x.SourceName)
+	paramFmtCodeCount := len(x.ParameterFormatCodes)
+	if paramFmtCodeCount > math.MaxInt16 {
+		return ErrValueOverflow
+	}
+	writeInt16(&buf, int16(paramFmtCodeCount))
+	for i := range paramFmtCodeCount {
+		writeInt16(&buf, x.ParameterFormatCodes[i])
+	}
+	paramDataCount := len(x.ParameterData)
+	if paramDataCount > math.MaxInt16 {
+		return ErrValueOverflow
+	}
+	for i := range paramDataCount {
+		dataLen := len(x.ParameterData[i])
+		if dataLen > math.MaxInt32 {
+			return ErrValueOverflow
+		}
+		writeInt32(&buf, int32(dataLen))
+		writeBytes(&buf, x.ParameterData[i])
+	}
+	colFmtCodeCount := len(x.ColumnFormatCodes)
+	if colFmtCodeCount > math.MaxInt16 {
+		return ErrValueOverflow
+	}
+	writeInt16(&buf, int16(colFmtCodeCount))
+	for i := range colFmtCodeCount {
+		writeInt16(&buf, x.ColumnFormatCodes[i])
+	}
 	return nil
 }
 
