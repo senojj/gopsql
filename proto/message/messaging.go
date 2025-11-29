@@ -234,15 +234,21 @@ func (x *AuthenticationSASL) Encode(w io.Writer) error {
 	for i := range len(x.Mechanisms) {
 		writeString(&buf, x.Mechanisms[i])
 	}
+	writeByte(&buf, 0x0)
 	return writeMessage(w, msgKindAuthentication, buf.Bytes())
 }
 
 func (x *AuthenticationSASL) Decode(b []byte) error {
-	for len(b) > 0 {
+	x.Mechanisms = []string{}
+
+	for {
 		var mechanism string
 		bread, err := readString(b, &mechanism)
 		if err != nil {
 			return err
+		}
+		if bread == 1 {
+			break
 		}
 		b = b[bread:]
 		x.Mechanisms = append(x.Mechanisms, mechanism)

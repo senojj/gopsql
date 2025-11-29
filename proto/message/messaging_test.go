@@ -291,11 +291,12 @@ func TestMessage(t *testing.T) {
 	t.Run("AuthenticationSASL", func(t *testing.T) {
 		var data bytes.Buffer
 		writeByte(&data, msgKindAuthentication)
-		writeInt32(&data, 22)
+		writeInt32(&data, 23)
 		writeInt32(&data, authKindSASL)
 		writeString(&data, "one")
 		writeString(&data, "two")
 		writeString(&data, "three")
+		writeByte(&data, 0x0)
 
 		var msg AuthenticationSASL
 		msg.Mechanisms = []string{"one", "two", "three"}
