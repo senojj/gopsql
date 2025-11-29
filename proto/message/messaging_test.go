@@ -439,6 +439,55 @@ func TestMessage(t *testing.T) {
 		})
 	})
 
+	t.Run("Bind", func(t *testing.T) {
+		var data bytes.Buffer
+		writeByte(&data, msgKindBind)
+		writeInt32(&data, 44)
+		writeString(&data, "hello")
+		writeString(&data, "world")
+		writeInt16(&data, 1)
+		writeInt16(&data, ColumnFormatBinary)
+		writeInt16(&data, 2)
+		writeInt32(&data, 5)
+		writeBytes(&data, []byte("hello"))
+		writeInt32(&data, 5)
+		writeBytes(&data, []byte("world"))
+		writeInt16(&data, 1)
+		writeInt16(&data, ColumnFormatBinary)
+
+		var msg Bind
+		msg.DestinationName = "hello"
+		msg.SourceName = "world"
+		msg.ParameterFormatCodes = []int16{
+			ColumnFormatBinary,
+		}
+		msg.ParameterData = [][]byte{
+			[]byte("hello"),
+			[]byte("world"),
+		}
+		msg.ColumnFormatCodes = []int16{
+			ColumnFormatBinary,
+		}
+
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := msg.Encode(&buf)
+			require.NoError(t, err)
+
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
+
+		t.Run("Read", func(t *testing.T) {
+			value, err := Read(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(*Bind)
+			require.True(t, ok)
+
+			require.Equal(t, &msg, m)
+		})
+	})
+
 	t.Run("BindComplete", func(t *testing.T) {
 		var data bytes.Buffer
 		writeByte(&data, msgKindBindComplete)
@@ -1220,12 +1269,12 @@ func TestMessage(t *testing.T) {
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := msg.Encode(&buf)
-			require.ErrorIs(t, err, ErrInvalidValue)
+			require.ErrorIs(t, err, ErrUnknownMessageType)
 		})
 
 		t.Run("Read", func(t *testing.T) {
 			value, err := Read(&data)
-			require.ErrorIs(t, err, ErrInvalidValue)
+			require.ErrorIs(t, err, ErrUnknownMessageType)
 			require.Nil(t, value)
 		})
 	})
@@ -1236,17 +1285,17 @@ func TestMessage(t *testing.T) {
 		writeInt32(&data, 8)
 		writeInt32(&data, -1)
 
-		var msg Unknown
+		var msg UnknownAuth
 
 		t.Run("Write", func(t *testing.T) {
 			var buf bytes.Buffer
 			err := msg.Encode(&buf)
-			require.ErrorIs(t, err, ErrInvalidValue)
+			require.ErrorIs(t, err, ErrUnknownAuthType)
 		})
 
 		t.Run("Read", func(t *testing.T) {
 			value, err := Read(&data)
-			require.ErrorIs(t, err, ErrInvalidValue)
+			require.ErrorIs(t, err, ErrUnknownAuthType)
 			require.Nil(t, value)
 		})
 	})

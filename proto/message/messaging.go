@@ -9,9 +9,10 @@ import (
 )
 
 var (
-	ErrValueUnderflow = errors.New("partial value")
-	ErrValueOverflow  = errors.New("value too large")
-	ErrInvalidValue   = errors.New("invalid value")
+	ErrValueUnderflow     = errors.New("partial value")
+	ErrValueOverflow      = errors.New("value too large")
+	ErrUnknownMessageType = errors.New("unknown message type")
+	ErrUnknownAuthType    = errors.New("unknown authentication type")
 )
 
 const (
@@ -345,6 +346,7 @@ func (x *Bind) Encode(w io.Writer) error {
 	if paramDataCount > math.MaxInt16 {
 		return ErrValueOverflow
 	}
+	writeInt16(&buf, int16(paramDataCount))
 	for i := range paramDataCount {
 		dataLen := len(x.ParameterData[i])
 		if dataLen > math.MaxInt32 {
@@ -360,6 +362,66 @@ func (x *Bind) Encode(w io.Writer) error {
 	writeInt16(&buf, int16(colFmtCodeCount))
 	for i := range colFmtCodeCount {
 		writeInt16(&buf, x.ColumnFormatCodes[i])
+	}
+	return writeMessage(w, msgKindBind, buf.Bytes())
+}
+
+func (x *Bind) Decode(b []byte) error {
+	bread, err := readString(b, &x.DestinationName)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+	bread, err = readString(b, &x.SourceName)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+	var paramFmtCodeCount int16
+	bread, err = readInt16(b, &paramFmtCodeCount)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+	x.ParameterFormatCodes = make([]int16, paramFmtCodeCount)
+	for i := range paramFmtCodeCount {
+		bread, err = readInt16(b, &x.ParameterFormatCodes[i])
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
+	}
+	var paramDataCount int16
+	bread, err = readInt16(b, &paramDataCount)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+	x.ParameterData = make([][]byte, paramDataCount)
+	for i := range paramDataCount {
+		var dataLen int32
+		bread, err = readInt32(b, &dataLen)
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
+		x.ParameterData[i] = make([]byte, dataLen)
+		bread = copy(x.ParameterData[i], b[:dataLen])
+		b = b[bread:]
+	}
+	var colFmtCodeCount int16
+	bread, err = readInt16(b, &colFmtCodeCount)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+	x.ColumnFormatCodes = make([]int16, colFmtCodeCount)
+	for i := range colFmtCodeCount {
+		bread, err = readInt16(b, &x.ColumnFormatCodes[i])
+		if err != nil {
+			return err
+		}
+		b = b[bread:]
 	}
 	return nil
 }
@@ -1006,11 +1068,21 @@ func (x *RowDescription) Decode(b []byte) error {
 type Unknown struct{}
 
 func (x *Unknown) Encode(_ io.Writer) error {
-	return ErrInvalidValue
+	return ErrUnknownMessageType
 }
 
 func (x *Unknown) Decode(_ []byte) error {
-	return ErrInvalidValue
+	return ErrUnknownMessageType
+}
+
+type UnknownAuth struct{}
+
+func (x *UnknownAuth) Encode(_ io.Writer) error {
+	return ErrUnknownAuthType
+}
+
+func (x *UnknownAuth) Decode(_ []byte) error {
+	return ErrUnknownAuthType
 }
 
 func parseMessage(kind byte, data []byte) (any, error) {
@@ -1027,6 +1099,8 @@ func parseMessage(kind byte, data []byte) (any, error) {
 		return parseAuthentication(k, d)
 	case msgKindBackendKeyData:
 		dec = new(BackendKeyData)
+	case msgKindBind:
+		dec = new(Bind)
 	case msgKindBindComplete:
 		dec = new(BindComplete)
 	case msgKindCloseComplete:
@@ -1106,7 +1180,7 @@ func parseAuthentication(kind int32, data []byte) (any, error) {
 	case authKindSASLFinal:
 		dec = new(AuthenticationSASLFinal)
 	default:
-		dec = new(Unknown)
+		dec = new(UnknownAuth)
 	}
 	err := dec.Decode(data)
 	if err != nil {
