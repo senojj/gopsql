@@ -300,22 +300,53 @@ func TestMessage(t *testing.T) {
 		var msg AuthenticationSASL
 		msg.Mechanisms = []string{"one", "two", "three"}
 
-		t.Run("Write", func(t *testing.T) {
-			var buf bytes.Buffer
-			err := msg.Encode(&buf)
-			require.NoError(t, err)
+		var dataZero bytes.Buffer
+		writeByte(&dataZero, msgKindAuthentication)
+		writeInt32(&dataZero, 9)
+		writeInt32(&dataZero, authKindSASL)
+		writeByte(&dataZero, 0x0)
 
-			require.Equal(t, data.Bytes(), buf.Bytes())
+		var msgZero AuthenticationSASL
+		msgZero.Mechanisms = []string{}
+
+		t.Run("Write", func(t *testing.T) {
+			t.Run("Present", func(t *testing.T) {
+				var buf bytes.Buffer
+				err := msg.Encode(&buf)
+				require.NoError(t, err)
+
+				require.Equal(t, data.Bytes(), buf.Bytes())
+			})
+
+			t.Run("Zero", func(t *testing.T) {
+				var buf bytes.Buffer
+				err := msgZero.Encode(&buf)
+				require.NoError(t, err)
+
+				require.Equal(t, dataZero.Bytes(), buf.Bytes())
+			})
 		})
 
 		t.Run("Read", func(t *testing.T) {
-			value, err := Read(&data)
-			require.NoError(t, err)
+			t.Run("Present", func(t *testing.T) {
+				value, err := Read(&data)
+				require.NoError(t, err)
 
-			m, ok := value.(*AuthenticationSASL)
-			require.True(t, ok)
+				m, ok := value.(*AuthenticationSASL)
+				require.True(t, ok)
 
-			require.Equal(t, &msg, m)
+				require.Equal(t, &msg, m)
+			})
+
+			t.Run("Zero", func(t *testing.T) {
+				value, err := Read(&dataZero)
+				require.NoError(t, err)
+
+				m, ok := value.(*AuthenticationSASL)
+				require.True(t, ok)
+
+				require.Equal(t, &msgZero, m)
+			})
 		})
 	})
 

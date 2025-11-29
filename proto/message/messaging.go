@@ -238,7 +238,7 @@ func (x *AuthenticationSASL) Encode(w io.Writer) error {
 }
 
 func (x *AuthenticationSASL) Decode(b []byte) error {
-	for len(b) > 1 {
+	for len(b) > 0 {
 		var mechanism string
 		bread, err := readString(b, &mechanism)
 		if err != nil {
