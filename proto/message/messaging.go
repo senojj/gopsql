@@ -1197,6 +1197,9 @@ func writeString(w io.Writer, s string) error {
 }
 
 func writeMessage(w io.Writer, kind byte, b []byte) error {
+	if len(b) > math.MaxInt32 {
+		return ErrValueOverflow
+	}
 	err := writeByte(w, kind)
 	if err != nil {
 		return err
