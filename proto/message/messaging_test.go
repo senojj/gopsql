@@ -514,6 +514,36 @@ func TestMessage(t *testing.T) {
 		})
 	})
 
+	t.Run("CancelRequest", func(t *testing.T) {
+		var data bytes.Buffer
+		writeInt32(&data, 17)
+		writeInt32(&data, codeCancelRequest)
+		writeInt32(&data, 1234)
+		writeBytes(&data, []byte("hello"))
+
+		var msg CancelRequest
+		msg.ProcessID = 1234
+		msg.SecretKey = []byte("hello")
+
+		t.Run("Write", func(t *testing.T) {
+			var buf bytes.Buffer
+			err := msg.Encode(&buf)
+			require.NoError(t, err)
+
+			require.Equal(t, data.Bytes(), buf.Bytes())
+		})
+
+		t.Run("Read", func(t *testing.T) {
+			value, err := ReadFirst(&data)
+			require.NoError(t, err)
+
+			m, ok := value.(*CancelRequest)
+			require.True(t, ok)
+
+			require.Equal(t, &msg, m)
+		})
+	})
+
 	t.Run("CloseComplete", func(t *testing.T) {
 		var data bytes.Buffer
 		writeByte(&data, msgKindCloseComplete)

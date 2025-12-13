@@ -13,6 +13,11 @@ var (
 	ErrValueOverflow      = errors.New("value too large")
 	ErrUnknownMessageType = errors.New("unknown message type")
 	ErrUnknownAuthType    = errors.New("unknown authentication type")
+	ErrUnknownCode        = errors.New("unknown code")
+)
+
+const (
+	codeCancelRequest int32 = 80877102
 )
 
 const (
@@ -92,6 +97,52 @@ const (
 	TxStatusActive byte = 'T'
 	TxStatusError  byte = 'E'
 )
+
+func ReadFirst(r io.Reader) (any, error) {
+	var header [4]byte
+
+	_, err := io.ReadFull(r, header[:])
+	if err != nil {
+		if err == io.EOF {
+			return nil, io.ErrUnexpectedEOF
+		}
+		return nil, err
+	}
+
+	var length int32
+	_, err = readInt32(header[:], &length)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]byte, length-4)
+	_, err = io.ReadFull(r, data)
+	if err != nil {
+		if err == io.EOF {
+			return nil, io.ErrUnexpectedEOF
+		}
+		return nil, err
+	}
+
+	var code int32
+	bread, err := readInt32(data, &code)
+	if err != nil {
+		return nil, err
+	}
+	data = data[bread:]
+
+	switch code {
+	case codeCancelRequest:
+		var req CancelRequest
+		err = req.Decode(data)
+		if err != nil {
+			return nil, err
+		}
+		return &req, nil
+	default:
+		return nil, ErrUnknownCode
+	}
+}
 
 func Read(r io.Reader) (any, error) {
 	var header [5]byte
@@ -433,6 +484,42 @@ func (x *BindComplete) Encode(w io.Writer) error {
 }
 
 func (x *BindComplete) Decode(_ []byte) error {
+	return nil
+}
+
+type CancelRequest struct {
+	ProcessID int32
+	SecretKey []byte
+}
+
+func (x *CancelRequest) Encode(w io.Writer) error {
+	if len(x.SecretKey) > 256 {
+		return ErrValueOverflow
+	}
+	var buf bytes.Buffer
+	writeInt32(&buf, codeCancelRequest)
+	writeInt32(&buf, x.ProcessID)
+	writeBytes(&buf, x.SecretKey)
+	msg := buf.Bytes()
+
+	if len(msg) > math.MaxInt32 {
+		return ErrValueOverflow
+	}
+	err := writeInt32(w, int32(len(msg)+4))
+	if err != nil {
+		return err
+	}
+	return writeBytes(w, msg)
+}
+
+func (x *CancelRequest) Decode(b []byte) error {
+	bread, err := readInt32(b, &x.ProcessID)
+	if err != nil {
+		return err
+	}
+	b = b[bread:]
+	x.SecretKey = make([]byte, len(b))
+	copy(x.SecretKey, b)
 	return nil
 }
 
