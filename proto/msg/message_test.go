@@ -1,155 +1,56 @@
-package proto
+package msg_test
 
 import (
 	"bytes"
+	"gopsql/internal/bx"
+	"gopsql/proto/msg"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestReadInt8(t *testing.T) {
-	t.Run("empty", func(t *testing.T) {
-		b := []byte{}
-
-		var first int8
-		bread, err := readInt8(b, &first)
-		require.ErrorIs(t, err, ErrValueUnderflow)
-		require.Equal(t, 0, bread)
-	})
-
-	t.Run("one", func(t *testing.T) {
-		b := []byte{byte(1)}
-
-		var first int8
-		bread, err := readInt8(b, &first)
-		require.NoError(t, err)
-		require.Equal(t, 1, bread)
-		require.Equal(t, int8(1), first)
-	})
-
-	t.Run("two", func(t *testing.T) {
-		b := []byte{byte(1), byte(2)}
-
-		var first int8
-		bread, err := readInt8(b, &first)
-		require.NoError(t, err)
-		require.Equal(t, 1, bread)
-		require.Equal(t, int8(1), first)
-
-		b = b[bread:]
-
-		var second int8
-		bread, err = readInt8(b, &second)
-		require.NoError(t, err)
-		require.Equal(t, 1, bread)
-		require.Equal(t, int8(2), second)
-	})
-}
-
-func TestReadString(t *testing.T) {
-	t.Run("iterative", func(t *testing.T) {
-		b := []byte{'a', 'b', 'c', '\x00', 'd', 'e', 'f', '\x00', 'g', 'h', 'i'}
-
-		var first string
-		bread, err := readString(b, &first)
-		require.NoError(t, err)
-		require.Equal(t, 4, bread)
-		require.Equal(t, "abc", first)
-
-		b = b[bread:]
-
-		var second string
-		bread, err = readString(b, &second)
-		require.NoError(t, err)
-		require.Equal(t, 4, bread)
-		require.Equal(t, "def", second)
-
-		b = b[bread:]
-
-		var third string
-		bread, err = readString(b, &third)
-		require.ErrorIs(t, err, ErrValueUnderflow)
-		require.Equal(t, 0, bread)
-		require.Equal(t, "", third)
-	})
-
-	t.Run("last_character_null", func(t *testing.T) {
-		b := []byte{'a', 'b', 'c', '\x00'}
-
-		var first string
-		bread, err := readString(b, &first)
-		require.NoError(t, err)
-		require.Equal(t, 4, bread)
-		require.Equal(t, "abc", first)
-	})
-
-	t.Run("only_character_null", func(t *testing.T) {
-		b := []byte{'\x00'}
-
-		var first string
-		bread, err := readString(b, &first)
-		require.NoError(t, err)
-		require.Equal(t, 1, bread)
-		require.Equal(t, "", first)
-	})
-}
-
 func TestMessage(t *testing.T) {
-	t.Run("MsgAuthOk", func(t *testing.T) {
-		var data bytes.Buffer
-		_ = writeByte(&data, msgKindAuthentication)
-		_ = writeInt32(&data, 8)
-		_ = writeInt32(&data, authKindOk)
+	t.Run("AuthOk", func(t *testing.T) {
+		var b []byte
+		b = bx.AppendByte(b, msg.KindAuthentication)
+		b = bx.AppendInt32(b, 8)
+		b = bx.AppendInt32(b, msg.KindAuthOk)
 
-		var msg MsgAuthOk
+		var m msg.AuthOk
 
-		t.Run("Write", func(t *testing.T) {
-			var buf bytes.Buffer
-			err := msg.Encode(&buf)
+		t.Run("UnmarshalBinary", func(t *testing.T) {
+			err := m.UnmarshalBinary(b)
 			require.NoError(t, err)
-
-			require.Equal(t, data.Bytes(), buf.Bytes())
 		})
 
-		t.Run("Read", func(t *testing.T) {
-			value, err := Read(&data)
+		t.Run("AppendBinary", func(t *testing.T) {
+			result, err := m.AppendBinary(nil)
 			require.NoError(t, err)
-
-			m, ok := value.(*MsgAuthOk)
-			require.True(t, ok)
-
-			require.Equal(t, &msg, m)
+			require.Equal(t, b, result)
 		})
 	})
 
-	t.Run("MsgAuthKerberosV5", func(t *testing.T) {
-		var data bytes.Buffer
-		_ = writeByte(&data, msgKindAuthentication)
-		_ = writeInt32(&data, 8)
-		_ = writeInt32(&data, authKindKerberosV5)
+	t.Run("AuthKerberosV5", func(t *testing.T) {
+		var b []byte
+		b = bx.AppendByte(b, msg.KindAuthentication)
+		b = bx.AppendInt32(b, 8)
+		b = bx.AppendInt32(b, msg.KindAuthKerberosV5)
 
-		var msg MsgAuthKerberosV5
+		var m msg.AuthKerberosV5
 
-		t.Run("Write", func(t *testing.T) {
-			var buf bytes.Buffer
-			err := msg.Encode(&buf)
+		t.Run("UnmarshalBinary", func(t *testing.T) {
+			err := m.UnmarshalBinary(b)
 			require.NoError(t, err)
-
-			require.Equal(t, data.Bytes(), buf.Bytes())
 		})
 
-		t.Run("Read", func(t *testing.T) {
-			value, err := Read(&data)
+		t.Run("AppendBinary", func(t *testing.T) {
+			result, err := m.AppendBinary(nil)
 			require.NoError(t, err)
-
-			m, ok := value.(*MsgAuthKerberosV5)
-			require.True(t, ok)
-
-			require.Equal(t, &msg, m)
+			require.Equal(t, b, result)
 		})
 	})
 
-	t.Run("MsgAuthCleartextPassword", func(t *testing.T) {
+	t.Run("AuthCleartextPassword", func(t *testing.T) {
 		var data bytes.Buffer
 		_ = writeByte(&data, msgKindAuthentication)
 		_ = writeInt32(&data, 8)

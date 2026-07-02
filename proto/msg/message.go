@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	codeCancelRequest int32 = 80877102
+	CodeCancelRequest int32 = 80877102
 )
 
 const (
@@ -19,6 +19,7 @@ const (
 	KindBackendKeyData           byte = 'K'
 	KindBind                     byte = 'B'
 	KindBindComplete             byte = '2'
+	KindClose                    byte = 'C'
 	KindCloseComplete            byte = '3'
 	KindCommandComplete          byte = 'C'
 	KindCopyData                 byte = 'd'
@@ -109,21 +110,27 @@ func unexpectedAuthKind(got, want int32) error {
 	return fmt.Errorf("%w: got '%d', want '%d'", ErrUnexpectedKind, got, want)
 }
 
+func ShiftLength(b []byte) ([]byte, error) {
+	length, b, err := bx.ShiftInt32(b)
+	if err != nil {
+		return nil, err
+	}
+
+	size := int(length) - 4
+
+	if size > len(b) {
+		return nil, bx.ErrValueUnderflow
+	}
+	return b[:size], nil
+}
+
 func ShiftHeader(b []byte) (byte, []byte, error) {
 	msgKind, b, err := bx.ShiftByte(b)
 	if err != nil {
 		return 0, nil, err
 	}
-
-	length, b, err := bx.ShiftInt32(b)
-	if err != nil {
-		return 0, nil, err
-	}
-
-	if int(length)-4 > len(b) {
-		return 0, nil, bx.ErrValueUnderflow
-	}
-	return msgKind, b, nil
+	b, err = ShiftLength(b)
+	return msgKind, b, err
 }
 
 type Message interface {
@@ -133,6 +140,10 @@ type Message interface {
 	message()
 }
 
+type msg struct{}
+
+func (x msg) message() {}
+
 type Backend interface {
 	Message
 
@@ -140,8 +151,6 @@ type Backend interface {
 }
 
 type back struct{}
-
-func (x back) message() {}
 
 func (x back) backend() {}
 
@@ -151,24 +160,16 @@ type Frontend interface {
 	frontend()
 }
 
-type Authentication interface {
-	Backend
+type front struct{}
 
-	authentication()
-}
-
-type authn struct {
-	back
-}
-
-func (x authn) authentication() {}
+func (x front) frontend() {}
 
 var _ Message = &AuthOk{}
 var _ Backend = &AuthOk{}
-var _ Authentication = &AuthOk{}
 
 type AuthOk struct {
-	authn
+	msg
+	back
 }
 
 func (x *AuthOk) AppendBinary(b []byte) ([]byte, error) {
@@ -205,10 +206,10 @@ func (x *AuthOk) UnmarshalBinary(b []byte) error {
 
 var _ Message = &AuthKerberosV5{}
 var _ Backend = &AuthKerberosV5{}
-var _ Authentication = &AuthKerberosV5{}
 
 type AuthKerberosV5 struct {
-	authn
+	msg
+	back
 }
 
 func (x *AuthKerberosV5) AppendBinary(b []byte) ([]byte, error) {
@@ -238,17 +239,17 @@ func (x *AuthKerberosV5) UnmarshalBinary(b []byte) error {
 	}
 
 	if len(b) > 0 {
-		return bx.ErrValueOverflow
+		return invalidFormat(bx.ErrValueOverflow)
 	}
 	return nil
 }
 
 var _ Message = &AuthCleartextPassword{}
 var _ Backend = &AuthCleartextPassword{}
-var _ Authentication = &AuthCleartextPassword{}
 
 type AuthCleartextPassword struct {
-	authn
+	msg
+	back
 }
 
 func (x *AuthCleartextPassword) AppendBinary(b []byte) ([]byte, error) {
@@ -278,17 +279,17 @@ func (x *AuthCleartextPassword) UnmarshalBinary(b []byte) error {
 	}
 
 	if len(b) > 0 {
-		return bx.ErrValueOverflow
+		return invalidFormat(bx.ErrValueOverflow)
 	}
 	return nil
 }
 
 var _ Message = &AuthMD5Password{}
 var _ Backend = &AuthMD5Password{}
-var _ Authentication = &AuthMD5Password{}
 
 type AuthMD5Password struct {
-	authn
+	msg
+	back
 
 	Salt [4]byte
 }
@@ -325,10 +326,10 @@ func (x *AuthMD5Password) UnmarshalBinary(b []byte) error {
 
 var _ Message = &AuthGSS{}
 var _ Backend = &AuthGSS{}
-var _ Authentication = &AuthGSS{}
 
 type AuthGSS struct {
-	authn
+	msg
+	back
 }
 
 func (x *AuthGSS) AppendBinary(b []byte) ([]byte, error) {
@@ -357,17 +358,17 @@ func (x *AuthGSS) UnmarshalBinary(b []byte) error {
 		return unexpectedAuthKind(authKind, KindAuthGSS)
 	}
 	if len(b) > 0 {
-		return bx.ErrValueOverflow
+		return invalidFormat(bx.ErrValueOverflow)
 	}
 	return nil
 }
 
 var _ Message = &AuthGSSContinue{}
 var _ Backend = &AuthGSSContinue{}
-var _ Authentication = &AuthGSSContinue{}
 
 type AuthGSSContinue struct {
-	authn
+	msg
+	back
 
 	Data []byte
 }
@@ -405,10 +406,10 @@ func (x *AuthGSSContinue) UnmarshalBinary(b []byte) error {
 
 var _ Message = &AuthSSPI{}
 var _ Backend = &AuthSSPI{}
-var _ Authentication = &AuthSSPI{}
 
 type AuthSSPI struct {
-	authn
+	msg
+	back
 }
 
 func (x *AuthSSPI) AppendBinary(b []byte) ([]byte, error) {
@@ -438,17 +439,17 @@ func (x *AuthSSPI) UnmarshalBinary(b []byte) error {
 	}
 
 	if len(b) > 0 {
-		return bx.ErrValueOverflow
+		return invalidFormat(bx.ErrValueOverflow)
 	}
 	return nil
 }
 
 var _ Message = &AuthSASL{}
 var _ Backend = &AuthSASL{}
-var _ Authentication = &AuthSASL{}
 
 type AuthSASL struct {
-	authn
+	msg
+	back
 
 	Mechanisms []string
 }
@@ -509,10 +510,10 @@ func (x *AuthSASL) UnmarshalBinary(b []byte) error {
 
 var _ Message = &AuthSASLContinue{}
 var _ Backend = &AuthSASLContinue{}
-var _ Authentication = &AuthSASLContinue{}
 
 type AuthSASLContinue struct {
-	authn
+	msg
+	back
 
 	Data []byte
 }
@@ -550,10 +551,10 @@ func (x *AuthSASLContinue) UnmarshalBinary(b []byte) error {
 
 var _ Message = &AuthSASLFinal{}
 var _ Backend = &AuthSASLFinal{}
-var _ Authentication = &AuthSASLFinal{}
 
 type AuthSASLFinal struct {
-	authn
+	msg
+	back
 
 	Data []byte
 }
@@ -593,6 +594,7 @@ var _ Message = &BackendKeyData{}
 var _ Backend = &BackendKeyData{}
 
 type BackendKeyData struct {
+	msg
 	back
 
 	ProcessID int32
@@ -635,10 +637,11 @@ func (x *BackendKeyData) UnmarshalBinary(b []byte) error {
 }
 
 var _ Message = &Bind{}
-var _ Backend = &Bind{}
+var _ Frontend = &Bind{}
 
 type Bind struct {
-	back
+	msg
+	front
 
 	DestinationName      string
 	SourceName           string
@@ -760,100 +763,252 @@ func (x *Bind) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
-type MsgBindComplete struct{}
+var _ Message = &BindComplete{}
+var _ Backend = &BindComplete{}
 
-func (x *MsgBindComplete) Encode(w io.Writer) error {
-	return writeMessage(w, msgKindBindComplete, []byte{})
+type BindComplete struct {
+	msg
+	back
 }
 
-func (x *MsgBindComplete) Decode(_ []byte) error {
+func (x *BindComplete) AppendBinary(b []byte) ([]byte, error) {
+	b = bx.AppendByte(b, KindBindComplete)
+	b = bx.AppendInt32(b, 4)
+	return b, nil
+}
+
+func (x *BindComplete) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if kind != KindBindComplete {
+		return unexpectedKind(kind, KindBindComplete)
+	}
+
+	if len(b) > 0 {
+		return invalidFormat(bx.ErrValueOverflow)
+	}
 	return nil
 }
 
-type MsgCancelRequest struct {
+var _ Message = &CancelRequest{}
+var _ Frontend = &CancelRequest{}
+
+type CancelRequest struct {
+	msg
+	front
+
 	ProcessID int32
 	SecretKey []byte
 }
 
-func (x *MsgCancelRequest) Encode(w io.Writer) error {
+func (x *CancelRequest) AppendBinary(b []byte) ([]byte, error) {
 	if len(x.SecretKey) > 256 {
-		return ErrValueOverflow
+		return nil, invalidFormat(bx.ErrValueOverflow)
 	}
-	var buf bytes.Buffer
-	_ = writeInt32(&buf, codeCancelRequest)
-	_ = writeInt32(&buf, x.ProcessID)
-	_ = writeBytes(&buf, x.SecretKey)
-	msg := buf.Bytes()
+	var buffer []byte
+	buffer = bx.AppendInt32(buffer, CodeCancelRequest)
+	buffer = bx.AppendInt32(buffer, x.ProcessID)
+	buffer = bx.AppendBytes(buffer, x.SecretKey)
 
-	if len(msg) > math.MaxInt32 {
-		return ErrValueOverflow
+	if len(buffer) > math.MaxInt32 {
+		return nil, invalidFormat(bx.ErrValueOverflow)
 	}
-	err := writeInt32(w, int32(len(msg)+4))
-	if err != nil {
-		return err
-	}
-	return writeBytes(w, msg)
+
+	b = bx.AppendInt32(b, int32(len(buffer)+4))
+	b = bx.AppendBytes(b, buffer)
+	return b, nil
 }
 
-func (x *MsgCancelRequest) Decode(b []byte) error {
-	bread, err := readInt32(b, &x.ProcessID)
+func (x *CancelRequest) UnmarshalBinary(b []byte) error {
+	b, err := ShiftLength(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+	processID, b, err := bx.ShiftInt32(b)
 	if err != nil {
 		return err
 	}
-	b = b[bread:]
+	x.ProcessID = processID
 	x.SecretKey = make([]byte, len(b))
 	copy(x.SecretKey, b)
 	return nil
 }
 
-type MsgCloseComplete struct{}
+var _ Message = &Close{}
+var _ Frontend = &Close{}
 
-func (x *MsgCloseComplete) Encode(w io.Writer) error {
-	return writeMessage(w, msgKindCloseComplete, []byte{})
+type Close struct {
+	msg
+	front
+
+	Kind byte
+	Name string
 }
 
-func (x *MsgCloseComplete) Decode(_ []byte) error {
+func (x *Close) AppendBinary(b []byte) ([]byte, error) {
+	var buffer []byte
+	buffer = bx.AppendByte(buffer, x.Kind)
+	buffer = bx.AppendString(buffer, x.Name)
+
+	b = bx.AppendByte(b, KindClose)
+	b = bx.AppendInt32(b, int32(len(buffer))+4)
+	b = bx.AppendBytes(b, buffer)
+	return b, nil
+}
+
+func (x *Close) UnmarshalBinary(b []byte) error {
+	msgKind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if msgKind != KindClose {
+		return unexpectedKind(KindClose)
+	}
+
+	kind, b, err := bx.ShiftByte(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	name, b, err := bx.ShiftString(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+	x.Kind = kind
+	x.Name = name
 	return nil
 }
 
-type MsgCommandComplete struct {
+var _ Message = &CloseComplete{}
+var _ Backend = &CloseComplete{}
+
+type CloseComplete struct {
+	msg
+	back
+}
+
+func (x *CloseComplete) AppendBinary(b []byte) ([]byte, error) {
+	b = bx.AppendByte(b, KindCloseComplete)
+	b = bx.AppendInt32(b, 4)
+	return b, nil
+}
+
+func (x *CloseComplete) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if kind != KindCloseComplete {
+		return unexpectedKind(kind, KindCloseComplete)
+	}
+
+	if len(b) > 0 {
+		return invalidFormat(bx.ErrValueOverflow)
+	}
+	return nil
+}
+
+var _ Message = &CommandComplete{}
+var _ Backend = &CommandComplete{}
+
+type CommandComplete struct {
+	msg
+	back
+
 	Tag string
 }
 
-func (x *MsgCommandComplete) Encode(w io.Writer) error {
-	var buf bytes.Buffer
-	_ = writeString(&buf, x.Tag)
-	return writeMessage(w, msgKindCommandComplete, buf.Bytes())
+func (x *CommandComplete) AppendBinary(b []byte) ([]byte, error) {
+	b = bx.AppendByte(b, KindCommandComplete)
+	b = bx.AppendInt32(b, int32(len(x.Tag))+4)
+	b = bx.AppendString(b, x.Tag)
+	return b, nil
 }
 
-func (x *MsgCommandComplete) Decode(b []byte) error {
-	_, err := readString(b, &x.Tag)
-	return err
+func (x *CommandComplete) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if kind != KindCommandComplete {
+		return unexpectedKind(kind, KindCommandComplete)
+	}
+
+	tag, b, err := bx.ShiftString(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+	x.Tag = tag
+	return nil
 }
 
-type MsgCopyData struct {
+var _ Message = &CopyData{}
+var _ Frontend = &CopyData{}
+var _ Backend = &CopyData{}
+
+type CopyData struct {
+	msg
+	front
+	back
+
 	Data []byte
 }
 
-func (x *MsgCopyData) Encode(w io.Writer) error {
-	var buf bytes.Buffer
-	_ = writeBytes(&buf, x.Data)
-	return writeMessage(w, msgKindCopyData, buf.Bytes())
+func (x *CopyData) AppendBinary(b []byte) ([]byte, error) {
+	b = bx.AppendByte(b, KindCopyData)
+	b = bx.AppendInt32(b, int32(len(x.Data)+4))
+	b = bx.AppendBytes(b, x.Data)
+	return b, nil
 }
 
-func (x *MsgCopyData) Decode(b []byte) error {
-	x.Data = make([]byte, len(b))
+func (x *CopyData) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if kind != KindCopyData {
+		return unexpectedKind(kind, KindCopyData)
+	}
 	copy(x.Data, b)
 	return nil
 }
 
-type MsgCopyDone struct{}
+var _ Message = &CopyDone{}
+var _ Frontend = &CopyDone{}
+var _ Backend = &CopyDone{}
 
-func (x *MsgCopyDone) Encode(w io.Writer) error {
-	return writeMessage(w, msgKindCopyDone, []byte{})
+type CopyDone struct {
+	msg
+	front
+	back
 }
 
-func (x *MsgCopyDone) Decode(_ []byte) error {
+func (x *CopyDone) AppendBinary(b []byte) ([]byte, error) {
+	b = bx.AppendByte(b, KindCopyDone)
+	b = bx.AppendInt32(b, 4)
+	return b, nil
+}
+
+func (x *CopyDone) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if kind != KindCopyDone {
+		return unexpectedKind(kind, KindCopyDone)
+	}
+
+	if len(b) > 0 {
+		return invalidFormat(bx.ErrValueOverflow)
+	}
 	return nil
 }
 
