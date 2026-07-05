@@ -30,6 +30,7 @@ const (
 	KindCopyOutResponse          byte = 'H'
 	KindCopyBothResponse         byte = 'W'
 	KindDataRow                  byte = 'D'
+	KindDescribe                 byte = 'D'
 	KindEmptyQueryResponse       byte = 'I'
 	KindErrorResponse            byte = 'E'
 	KindFunctionCallResponse     byte = 'V'
@@ -1531,60 +1532,171 @@ func (x *DataRow) AppendBinary(b []byte) ([]byte, error) {
 	return b, nil
 }
 
-func (x *DataRow) Decode(b []byte) error {
-	var columns int16
-	bread, err := readInt16(b, &columns)
+func (x *DataRow) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
 	if err != nil {
-		return err
+		return invalidFormat(err)
 	}
-	b = b[bread:]
-	x.Columns = make([][]byte, columns)
 
-	for i := range columns {
+	if kind == KindDataRow {
+		return unexpectedKind(kind, KindDataRow)
+	}
+
+	countCols, b, err := bx.ShiftInt16(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+	columns := make([][]byte, 0, countCols)
+
+	for i := range countCols {
 		var length int32
-		bread, err = readInt32(b, &length)
+		length, b, err = bx.ShiftInt32(b)
 		if err != nil {
-			return err
+			return invalidFormat(err)
 		}
-		b = b[bread:]
 
 		if length == -1 {
-			x.Columns[i] = nil
+			columns[i] = nil
 			continue
 		}
-		x.Columns[i] = make([]byte, length)
-		copy(x.Columns[i], b[:length])
-		b = b[length:]
+
+		columns[i], b, err = bx.ShiftBytes(b, int(length))
+		if err != nil {
+			return invalidFormat(err)
+		}
 	}
 	return nil
 }
 
-type MsgEmptyQueryResponse struct{}
+var _ Message = &Describe{}
+var _ Frontend = &Describe{}
 
-func (x *MsgEmptyQueryResponse) Encode(w io.Writer) error {
-	return writeMessage(w, msgKindEmptyQueryResponse, []byte{})
+type Describe struct {
+	msg
+	front
+
+	Kind byte
+	Name string
 }
 
-func (x *MsgEmptyQueryResponse) Decode(_ []byte) error {
+func (x *Describe) AppendBinary(b []byte) ([]byte, error) {
+	const sizeKind = 1
+
+	length := sizeMessageLength +
+		sizeKind +
+		len(x.Name) + 1 // null terminated string
+
+	if length > math.MaxInt32 {
+		return nil, invalidFormat(bx.ErrValueOverflow)
+	}
+
+	size := sizeMessageKind + length
+
+	b = slices.Grow(b, size)
+	b = bx.AppendByte(b, KindDescribe)
+	b = bx.AppendInt32(b, int32(length))
+	b = bx.AppendByte(b, x.Kind)
+	b = bx.AppendString(b, x.Name)
+	return b, nil
+}
+
+func (x *Describe) UnmarshalBinary(b []byte) error {
+	msgKind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if msgKind != KindDescribe {
+		return unexpectedKind(msgKind, KindDescribe)
+	}
+
+	kind, b, err := bx.ShiftByte(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	name, b, err := bx.ShiftString(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	x.Kind = kind
+	x.Name = name
 	return nil
 }
 
-type MsgErrorResponse struct {
+var _ Message = &EmptyQueryResponse{}
+var _ Backend = &EmptyQueryResponse{}
+
+type EmptyQueryResponse struct {
+	msg
+	back
+}
+
+func (x *EmptyQueryResponse) AppendBinary(b []byte) ([]byte, error) {
+	const length = sizeMessageLength
+	const size = sizeMessageKind + length
+
+	b = slices.Grow(b, size)
+	b = bx.AppendByte(b, KindEmptyQueryResponse)
+	b = bx.AppendInt32(b, int32(length))
+	return b, nil
+}
+
+func (x *EmptyQueryResponse) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if kind != KindEmptyQueryResponse {
+		return unexpectedKind(kind, KindEmptyQueryResponse)
+	}
+
+	if len(b) > 0 {
+		return invalidFormat(bx.ErrValueOverflow)
+	}
+	return nil
+}
+
+type ErrorResponse struct {
+	msg
+	back
+
 	Fields []byte
 	Values []string
 }
 
-func (x *MsgErrorResponse) Encode(w io.Writer) error {
-	var buf bytes.Buffer
-	for i := range len(x.Fields) {
-		_ = writeByte(&buf, x.Fields[i])
-		_ = writeString(&buf, x.Values[i])
+func (x *ErrorResponse) AppendBinary(b []byte) ([]byte, error) {
+	const sizeField = 1
+
+	countFields := len(x.Fields)
+	countValues := len(x.Values)
+
+	sizeFields := countFields * sizeField
+
+	length := sizeMessageLength + sizeFields
+
+	for i := range countValues {
+		value := x.Values[i]
+		length += len(value) + 1 // null terminated string
 	}
-	_ = writeByte(&buf, 0)
-	return writeMessage(w, msgKindErrorResponse, buf.Bytes())
+
+	size := sizeMessageKind + length + 1 // null terminated list
+
+	b = slices.Grow(b, size)
+	b = bx.AppendByte(b, KindErrorResponse)
+	b = bx.AppendInt32(b, int32(length))
+
+	for i := range countFields {
+		b = bx.AppendByte(b, x.Fields[i])
+		b = bx.AppendString(b, x.Values[i])
+	}
+	b = bx.AppendByte(b, 0)
+	return b, nil
 }
 
-func (x *MsgErrorResponse) Decode(b []byte) error {
+func (x *ErrorResponse) Decode(b []byte) error {
 	var field byte
 	bread, err := readByte(b, &field)
 	if err != nil {
