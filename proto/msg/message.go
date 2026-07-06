@@ -33,6 +33,8 @@ const (
 	KindDescribe                 byte = 'D'
 	KindEmptyQueryResponse       byte = 'I'
 	KindErrorResponse            byte = 'E'
+	KindExecute                  byte = 'E'
+	KindFlush                    byte = 'H'
 	KindFunctionCallResponse     byte = 'V'
 	KindNegotiateProtocolVersion byte = 'v'
 	KindNoData                   byte = 'n'
@@ -1682,7 +1684,13 @@ func (x *ErrorResponse) AppendBinary(b []byte) ([]byte, error) {
 		length += len(value) + 1 // null terminated string
 	}
 
-	size := sizeMessageKind + length + 1 // null terminated list
+	length += 1 // null terminated list
+
+	if length > math.MaxInt32 {
+		return nil, invalidFormat(bx.ErrValueOverflow)
+	}
+
+	size := sizeMessageKind + length
 
 	b = slices.Grow(b, size)
 	b = bx.AppendByte(b, KindErrorResponse)
@@ -1696,38 +1704,236 @@ func (x *ErrorResponse) AppendBinary(b []byte) ([]byte, error) {
 	return b, nil
 }
 
-func (x *ErrorResponse) Decode(b []byte) error {
-	var field byte
-	bread, err := readByte(b, &field)
+func (x *ErrorResponse) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
 	if err != nil {
-		return err
+		return invalidFormat(err)
 	}
-	b = b[bread:]
 
-	for field != 0 {
-		x.Fields = append(x.Fields, field)
+	if kind != KindErrorResponse {
+		return unexpectedKind(kind, KindErrorResponse)
+	}
+
+	var fields []byte
+	var values []string
+
+	for {
+		var field byte
+		field, b, err = bx.ShiftByte(b)
+		if err != nil {
+			return invalidFormat(err)
+		}
+
+		if field == 0 {
+			break
+		}
+		fields = append(fields, field)
+
 		var value string
-		bread, err = readString(b, &value)
+		value, b, err = bx.ShiftString(b)
 		if err != nil {
-			return err
+			return invalidFormat(err)
 		}
-		b = b[bread:]
-		x.Values = append(x.Values, value)
-		bread, err = readByte(b, &field)
+		values = append(values, value)
+
+		field, b, err = bx.ShiftByte(b)
 		if err != nil {
-			return err
+			return invalidFormat(err)
 		}
-		b = b[bread:]
+	}
+
+	x.Fields = fields
+	x.Values = values
+	return nil
+}
+
+var _ Message = &Execute{}
+var _ Frontend = &Execute{}
+
+type Execute struct {
+	msg
+	front
+
+	Portal   string
+	RowLimit int32
+}
+
+func (x *Execute) AppendBinary(b []byte) ([]byte, error) {
+	const sizeRowLimit = 4
+
+	sizePortal := len(x.Portal) + 1 // null terminated string
+
+	length := sizeMessageLength + sizePortal + sizeRowLimit
+
+	if length > math.MaxInt32 {
+		return nil, invalidFormat(bx.ErrValueOverflow)
+	}
+
+	size := sizeMessageKind + length
+
+	b = slices.Grow(b, size)
+	b = bx.AppendByte(b, KindExecute)
+	b = bx.AppendInt32(b, int32(length))
+	b = bx.AppendString(b, x.Portal)
+	b = bx.AppendInt32(b, x.RowLimit)
+	return b, nil
+}
+
+func (x *Execute) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if kind != KindExecute {
+		return unexpectedKind(kind, KindExecute)
+	}
+
+	portal, b, err := bx.ShiftString(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	limit, b, err := bx.ShiftInt32(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	x.Portal = portal
+	x.RowLimit = limit
+	return nil
+}
+
+var _ Message = &Flush{}
+var _ Frontend = &Flush{}
+
+type Flush struct {
+	msg
+	front
+}
+
+func (x *Flush) AppendBinary(b []byte) ([]byte, error) {
+	const length = sizeMessageLength
+	const size = sizeMessageKind + length
+
+	b = slices.Grow(b, size)
+	b = bx.AppendByte(b, KindFlush)
+	b = bx.AppendInt32(b, int32(length))
+	return b, nil
+}
+
+func (x *Flush) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if kind != KindFlush {
+		return unexpectedKind(kind, KindFlush)
+	}
+
+	if len(b) > 0 {
+		return invalidFormat(bx.ErrValueOverflow)
 	}
 	return nil
 }
 
-type MsgFunctionCallResponse struct {
+var _ Message = &FunctionCall{}
+var _ Frontend = &FunctionCall{}
+
+type FunctionCall struct {
+	msg
+	front
+
+	ObjectID int32
+
+	// ArgumentFormats may have zero elements, indicating that there are no
+	// arguments, or that all arguments use the default format (text); or one,
+	// in which case the specified format code is applied to all arguments; or
+	// its element count may equal the total number of arguments.
+	ArgumentFormats []int16
+
+	ArgumentValues [][]byte
+	ResultFormat   int16
+}
+
+func (x *FunctionCall) AppendBinary(b []byte) ([]byte, error) {
+	const sizeObjectID = 4
+	const sizeCountFormats = 2
+	const sizeFormat = 2
+	const sizeCountArguments = 2
+	const sizeArgumentLength = 4
+	const sizeResultFormat = 2
+
+	countFormats := len(x.ArgumentFormats)
+
+	if countFormats > math.MaxInt16 {
+		return nil, invalidFormat(bx.ErrValueOverflow)
+	}
+
+	countArguments := len(x.ArgumentValues)
+
+	if countArguments > math.MaxInt16 {
+		return nil, invalidFormat(bx.ErrValueOverflow)
+	}
+
+	sizeFormats := countFormats * sizeFormat
+	sizeArguments := 0
+
+	for i := range countArguments {
+		sizeArgumentValue := len(x.ArgumentValues[i])
+
+		if sizeArgumentValue > math.MaxInt32 {
+			return nil, invalidFormat(bx.ErrValueOverflow)
+		}
+		sizeArguments += sizeArgumentLength + sizeArgumentValue
+	}
+
+	length := sizeMessageLength +
+		sizeObjectID +
+		sizeCountFormats +
+		sizeFormats +
+		sizeCountArguments +
+		sizeArguments +
+		sizeResultFormat
+
+	if length > math.MaxInt32 {
+		return nil, invalidFormat(bx.ErrValueOverflow)
+	}
+
+	size := sizeMessageKind + length
+
+	b = slices.Grow(b, size)
+	b = bx.AppendByte(b, KindFunctionCall)
+	b = bx.AppendInt32(b, int32(length))
+	b = bx.AppendInt32(b, x.ObjectID)
+	b = bx.AppendInt16(b, int16(countFormats))
+	b = bx.AppendInt16(b, x.ArgumentFormats...)
+	b = bx.AppendInt16(b, int16(countArguments))
+
+	for i := range countArguments {
+		value := x.ArgumentValues[i]
+		length := len(value)
+		b = bx.AppendInt32(b, int32(length))
+		b = bx.AppendByte(b, value...)
+	}
+	b = bx.AppendInt16(b, x.ResultFormat)
+	return b, nil
+}
+
+var _ Message = &FunctionCallResponse{}
+var _ Backend = &FunctionCallResponse{}
+
+type FunctionCallResponse struct {
+	msg
+	back
+
 	// Can be zero length or nil.
 	Result []byte
 }
 
-func (x *MsgFunctionCallResponse) Encode(w io.Writer) error {
+func (x *FunctionCallResponse) AppendBinary(b []byte) ([]byte, error) {
+
 	var buf bytes.Buffer
 	if x.Result == nil {
 		_ = writeInt32(&buf, -1)
@@ -1738,7 +1944,7 @@ func (x *MsgFunctionCallResponse) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindFunctionCallResponse, buf.Bytes())
 }
 
-func (x *MsgFunctionCallResponse) Decode(b []byte) error {
+func (x *FunctionCallResponse) Decode(b []byte) error {
 	var length int32
 	bread, err := readInt32(b, &length)
 	if err != nil {
