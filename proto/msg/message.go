@@ -35,6 +35,7 @@ const (
 	KindErrorResponse            byte = 'E'
 	KindExecute                  byte = 'E'
 	KindFlush                    byte = 'H'
+	KindFunctionCall             byte = 'F'
 	KindFunctionCallResponse     byte = 'V'
 	KindNegotiateProtocolVersion byte = 'v'
 	KindNoData                   byte = 'n'
@@ -1919,6 +1920,66 @@ func (x *FunctionCall) AppendBinary(b []byte) ([]byte, error) {
 	}
 	b = bx.AppendInt16(b, x.ResultFormat)
 	return b, nil
+}
+
+func (x *FunctionCall) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if kind != KindFunctionCall {
+		return unexpectedKind(kind, KindFunctionCall)
+	}
+
+	objectID, b, err := bx.ShiftInt32(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	countFormats, b, err := bx.ShiftInt16(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	formats := make([]int16, 0, countFormats)
+	for range countFormats {
+		var format int16
+		format, b, err = bx.ShiftInt16(b)
+		if err != nil {
+			return invalidFormat(err)
+		}
+		formats = append(formats, format)
+	}
+
+	countArguments, b, err := bx.ShiftInt16(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	arguments := make([][]byte, 0, countArguments)
+	for range countArguments {
+		var length int32
+		length, b, err = bx.ShiftInt32(b)
+		if err != nil {
+			return invalidFormat(err)
+		}
+		var value []byte
+		value, b, err = bx.ShiftBytes(b, int(length))
+		if err != nil {
+			return invalidFormat(err)
+		}
+		arguments = append(arguments, value)
+	}
+	resultFormat, b, err := bx.ShiftInt16(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+	x.ObjectID = objectID
+	x.ArgumentFormats = formats
+	x.ArgumentValues = arguments
+	x.ResultFormat = resultFormat
+	return nil
 }
 
 var _ Message = &FunctionCallResponse{}
