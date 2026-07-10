@@ -37,6 +37,7 @@ const (
 	KindFlush                    byte = 'H'
 	KindFunctionCall             byte = 'F'
 	KindFunctionCallResponse     byte = 'V'
+	KindGSSResponse              byte = 'p'
 	KindNegotiateProtocolVersion byte = 'v'
 	KindNoData                   byte = 'n'
 	KindNoticeResponse           byte = 'N'
@@ -1994,83 +1995,222 @@ type FunctionCallResponse struct {
 }
 
 func (x *FunctionCallResponse) AppendBinary(b []byte) ([]byte, error) {
+	const sizeResultLength = 4
+	sizeResult := len(x.Result)
 
-	var buf bytes.Buffer
-	if x.Result == nil {
-		_ = writeInt32(&buf, -1)
-	} else {
-		_ = writeInt32(&buf, int32(len(x.Result)))
+	if sizeResult > math.MaxInt32 {
+		return nil, invalidFormat(bx.ErrValueOverflow)
 	}
-	_ = writeBytes(&buf, x.Result)
-	return writeMessage(w, msgKindFunctionCallResponse, buf.Bytes())
+
+	length := sizeMessageLength +
+		sizeResultLength +
+		sizeResult
+
+	size := sizeMessageKind + length
+
+	b = slices.Grow(b, size)
+	b = bx.AppendByte(b, KindFunctionCallResponse)
+	b = bx.AppendInt32(b, int32(length))
+
+	if x.Result == nil {
+		b = bx.AppendInt32(b, int32(-1))
+	} else {
+		b = bx.AppendInt32(b, int32(sizeResult))
+	}
+	b = bx.AppendByte(b, x.Result...)
+	return b, nil
 }
 
-func (x *FunctionCallResponse) Decode(b []byte) error {
-	var length int32
-	bread, err := readInt32(b, &length)
+func (x *FunctionCallResponse) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
 	if err != nil {
-		return err
+		return invalidFormat(err)
 	}
-	b = b[bread:]
+
+	if kind != KindFunctionCallResponse {
+		return unexpectedKind(kind, KindFunctionCall)
+	}
+
+	length, b, err := bx.ShiftInt32(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
 
 	if length >= 0 {
 		x.Result = make([]byte, length)
-		copy(x.Result, b[:length])
+		copy(x.Result, b)
 	}
-	// f.Result remains nil when length < 0
+	// Result remains nil when length < 0
 	return nil
 }
 
-type MsgNegotiateProtocolVersion struct {
+var _ Message = &GSSENCRequest{}
+var _ Frontend = &GSSENCRequest{}
+
+const (
+	high                  int32 = 1234
+	low                   int32 = 5680
+	encryptionRequestCode int32 = low | high<<16
+)
+
+type GSSENCRequest struct {
+	msg
+	front
+}
+
+func (x *GSSENCRequest) AppendBinary(b []byte) ([]byte, error) {
+	const sizeCode = 4
+	const length = sizeMessageLength + sizeCode
+
+	b = slices.Grow(b, length)
+	b = bx.AppendInt32(b, length)
+	b = bx.AppendInt32(b, encryptionRequestCode)
+	return b, nil
+}
+
+func (x *GSSENCRequest) UnmarshalBinary(b []byte) error {
+	b, err := ShiftLength(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	code, b, err := bx.ShiftInt32(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if code != encryptionRequestCode {
+		return invalidFormat(bx.ErrUnknownCode)
+	}
+	return nil
+}
+
+var _ Message = &GSSResponse{}
+var _ Frontend = &GSSResponse{}
+
+type GSSResponse struct {
+	msg
+	front
+
+	Data []byte
+}
+
+func (x *GSSResponse) AppendBinary(b []byte) ([]byte, error) {
+	length := sizeMessageLength + len(x.Data)
+
+	if length > math.MaxInt32 {
+		return nil, invalidFormat(bx.ErrValueOverflow)
+	}
+	size := sizeMessageKind + length
+
+	b = slices.Grow(b, size)
+	b = bx.AppendByte(b, KindGSSResponse)
+	b = bx.AppendInt32(b, int32(length))
+	b = bx.AppendByte(b, x.Data...)
+	return b, nil
+}
+
+func (x *GSSResponse) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if kind != KindGSSResponse {
+		return unexpectedKind(kind, KindGSSResponse)
+	}
+
+	x.Data = make([]byte, len(b))
+	copy(x.Data, b)
+	return nil
+}
+
+var _ Message = &NegotiateProtocolVersion{}
+var _ Backend = &NegotiateProtocolVersion{}
+
+type NegotiateProtocolVersion struct {
+	msg
+	back
+
 	MinorVersionSupported int32
 	UnrecognizedOptions   []string
 }
 
-func (x *MsgNegotiateProtocolVersion) Encode(w io.Writer) error {
-	var buf bytes.Buffer
-	_ = writeInt32(&buf, x.MinorVersionSupported)
-	_ = writeInt32(&buf, int32(len(x.UnrecognizedOptions)))
-	for _, option := range x.UnrecognizedOptions {
-		_ = writeString(&buf, option)
+func (x *NegotiateProtocolVersion) AppendBinary(b []byte) ([]byte, error) {
+	const sizeMinorVersion = 4
+	const sizeUnrecognizedOptionCount = 4
+
+	length := sizeMessageLength +
+		sizeMinorVersion +
+		sizeUnrecognizedOptionCount
+
+	countUnrecognizedOptions := len(x.UnrecognizedOptions)
+
+	if countUnrecognizedOptions > math.MaxInt32 {
+		return nil, invalidFormat(bx.ErrValueOverflow)
 	}
-	return writeMessage(w, msgKindNegotiateProtocolVersion, buf.Bytes())
+
+	for _, option := range x.UnrecognizedOptions {
+		length += len(option)
+	}
+
+	if length > math.MaxInt32 {
+		return nil, invalidFormat(bx.ErrValueOverflow)
+	}
+
+	size := sizeMessageKind + length
+
+	b = slices.Grow(b, size)
+	b = bx.AppendByte(b, KindNegotiateProtocolVersion)
+	b = bx.AppendInt32(b, int32(length))
+	b = bx.AppendInt32(b, x.MinorVersionSupported)
+	b = bx.AppendInt32(b, int32(countUnrecognizedOptions))
+	b = bx.AppendString(b, x.UnrecognizedOptions...)
+	return b, nil
 }
 
-func (x *MsgNegotiateProtocolVersion) Decode(b []byte) error {
-	bread, err := readInt32(b, &x.MinorVersionSupported)
+func (x *NegotiateProtocolVersion) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
 	if err != nil {
-		return err
+		return invalidFormat(err)
 	}
-	b = b[bread:]
 
-	var numUnrecognized int32
-	bread, err = readInt32(b, &numUnrecognized)
+	if kind != KindNegotiateProtocolVersion {
+		return unexpectedKind(kind, KindNegotiateProtocolVersion)
+	}
+
+	minorVersion, b, err := bx.ShiftInt32(b)
 	if err != nil {
-		return err
+		return invalidFormat(err)
 	}
-	b = b[bread:]
 
-	x.UnrecognizedOptions = make([]string, numUnrecognized)
+	countUnsupportedOptions, b, err := bx.ShiftInt32(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
 
-	for i := range numUnrecognized {
-		var protocol string
-		bread, err = readString(b, &protocol)
+	options := make([]string, 0, countUnsupportedOptions)
+
+	for range countUnsupportedOptions {
+		var option string
+		option, b, err = bx.ShiftString(b)
 		if err != nil {
-			return nil
+			return invalidFormat(err)
 		}
-		b = b[bread:]
-		x.UnrecognizedOptions[i] = protocol
+		options = append(options, option)
 	}
+	x.MinorVersionSupported = minorVersion
+	x.UnrecognizedOptions = options
 	return nil
 }
 
-type MsgNoData struct{}
+type NoData struct{}
 
-func (x *MsgNoData) Encode(w io.Writer) error {
+func (x *NoData) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindNoData, []byte{})
 }
 
-func (x *MsgNoData) Decode(_ []byte) error {
+func (x *NoData) Decode(_ []byte) error {
 	return nil
 }
 
