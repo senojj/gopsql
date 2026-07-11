@@ -12,10 +12,6 @@ import (
 )
 
 const (
-	CodeCancelRequest int32 = 80877102
-)
-
-const (
 	KindAuthentication           byte = 'R'
 	KindBackendKeyData           byte = 'K'
 	KindBind                     byte = 'B'
@@ -926,6 +922,12 @@ func (x *BindComplete) UnmarshalBinary(b []byte) error {
 
 var _ Message = &CancelRequest{}
 var _ Frontend = &CancelRequest{}
+
+const (
+	cancelHigh        int32 = 1234
+	cancelLow         int32 = 5678
+	CodeCancelRequest int32 = cancelLow | cancelHigh<<16
+)
 
 type CancelRequest struct {
 	msg
@@ -2048,9 +2050,9 @@ var _ Message = &GSSENCRequest{}
 var _ Frontend = &GSSENCRequest{}
 
 const (
-	high                  int32 = 1234
-	low                   int32 = 5680
-	encryptionRequestCode int32 = low | high<<16
+	encHigh               int32 = 1234
+	encLow                int32 = 5680
+	CodeEncryptionRequest int32 = encLow | encHigh<<16
 )
 
 type GSSENCRequest struct {
@@ -2064,7 +2066,7 @@ func (x *GSSENCRequest) AppendBinary(b []byte) ([]byte, error) {
 
 	b = slices.Grow(b, length)
 	b = bx.AppendInt32(b, length)
-	b = bx.AppendInt32(b, encryptionRequestCode)
+	b = bx.AppendInt32(b, CodeEncryptionRequest)
 	return b, nil
 }
 
@@ -2079,7 +2081,7 @@ func (x *GSSENCRequest) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if code != encryptionRequestCode {
+	if code != CodeEncryptionRequest {
 		return invalidFormat(bx.ErrUnknownCode)
 	}
 	return nil
@@ -2204,22 +2206,46 @@ func (x *NegotiateProtocolVersion) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
-type NoData struct{}
+var _ Message = &NoData{}
+var _ Backend = &NoData{}
 
-func (x *NoData) Encode(w io.Writer) error {
-	return writeMessage(w, msgKindNoData, []byte{})
+type NoData struct {
+	msg
+	back
 }
 
-func (x *NoData) Decode(_ []byte) error {
+func (x *NoData) AppendBinary(b []byte) ([]byte, error) {
+	const length = sizeMessageLength
+	const size = sizeMessageKind + length
+
+	b = slices.Grow(b, size)
+	b = bx.AppendByte(b, KindNoData)
+	b = bx.AppendInt32(b, length)
+	return b, nil
+}
+
+func (x *NoData) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if kind != KindNoData {
+		return unexpectedKind(kind, KindNoData)
+	}
+
+	if len(b) > 0 {
+		return invalidFormat(bx.ErrValueOverflow)
+	}
 	return nil
 }
 
-type MsgNoticeResponse struct {
+type NoticeResponse struct {
 	Fields []byte
 	Values []string
 }
 
-func (x *MsgNoticeResponse) Encode(w io.Writer) error {
+func (x *NoticeResponse) Encode(w io.Writer) error {
 	var buf bytes.Buffer
 	for i := range len(x.Fields) {
 		_ = writeByte(&buf, x.Fields[i])
@@ -2229,7 +2255,7 @@ func (x *MsgNoticeResponse) Encode(w io.Writer) error {
 	return writeMessage(w, msgKindNoticeResponse, buf.Bytes())
 }
 
-func (x *MsgNoticeResponse) Decode(b []byte) error {
+func (x *NoticeResponse) Decode(b []byte) error {
 	var field byte
 	bread, err := readByte(b, &field)
 	if err != nil {
