@@ -1,8 +1,7 @@
 package msg
 
 import (
-	"gopsql/internal/bx"
-	"slices"
+	"gopsql/internal/bytex"
 )
 
 const KindAuthOk int32 = 0
@@ -10,20 +9,22 @@ const KindAuthOk int32 = 0
 var _ Message = &AuthOk{}
 var _ Backend = &AuthOk{}
 
-type AuthOk struct {
-	msg
-	back
-}
+type AuthOk struct{}
+
+func (x *AuthOk) message() {}
+
+func (x *AuthOk) backend() {}
 
 func (x *AuthOk) AppendBinary(b []byte) ([]byte, error) {
 	const length = sizeMessageLength + sizeAuthKind
 	const size = sizeMessageKind + length
 
-	b = slices.Grow(b, size)
-	b = bx.AppendByte(b, KindAuthentication)
-	b = bx.AppendInt32(b, int32(length))
-	b = bx.AppendInt32(b, KindAuthOk)
-	return b, nil
+	buf := bytex.NewBuffer(b)
+	buf.Grow(size)
+	buf.AppendByte(KindAuthentication)
+	buf.AppendInt32(int32(length))
+	buf.AppendInt32(KindAuthOk)
+	return buf.Bytes(), nil
 }
 
 func (x *AuthOk) UnmarshalBinary(b []byte) error {
@@ -36,7 +37,7 @@ func (x *AuthOk) UnmarshalBinary(b []byte) error {
 		return unexpectedKind(msgKind, KindAuthentication)
 	}
 
-	authKind, b, err := bx.ShiftInt32(b)
+	authKind, b, err := bytex.ShiftInt32(b)
 	if err != nil {
 		return invalidFormat(err)
 	}
@@ -46,7 +47,7 @@ func (x *AuthOk) UnmarshalBinary(b []byte) error {
 	}
 
 	if len(b) > 0 {
-		return bx.ErrValueOverflow
+		return bytex.ErrValueOverflow
 	}
 	return nil
 }

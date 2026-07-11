@@ -2,7 +2,7 @@ package msg_test
 
 import (
 	"bytes"
-	"gopsql/internal/bx"
+	"gopsql/internal/bytex"
 	"gopsql/proto/msg"
 	"testing"
 
@@ -12,9 +12,9 @@ import (
 func TestMessage(t *testing.T) {
 	t.Run("AuthOk", func(t *testing.T) {
 		var b []byte
-		b = bx.AppendByte(b, msg.KindAuthentication)
-		b = bx.AppendInt32(b, 8)
-		b = bx.AppendInt32(b, msg.KindAuthOk)
+		b = bytex.AppendByte(b, msg.KindAuthentication)
+		b = bytex.AppendInt32(b, 8)
+		b = bytex.AppendInt32(b, msg.KindAuthOk)
 
 		var m msg.AuthOk
 
@@ -32,9 +32,9 @@ func TestMessage(t *testing.T) {
 
 	t.Run("AuthKerberosV5", func(t *testing.T) {
 		var b []byte
-		b = bx.AppendByte(b, msg.KindAuthentication)
-		b = bx.AppendInt32(b, 8)
-		b = bx.AppendInt32(b, msg.KindAuthKerberosV5)
+		b = bytex.AppendByte(b, msg.KindAuthentication)
+		b = bytex.AppendInt32(b, 8)
+		b = bytex.AppendInt32(b, msg.KindAuthKerberosV5)
 
 		var m msg.AuthKerberosV5
 

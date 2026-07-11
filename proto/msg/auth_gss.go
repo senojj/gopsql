@@ -4,18 +4,18 @@ import (
 	"gopsql/internal/bytex"
 )
 
-const KindAuthKerberosV5 int32 = 2
+const KindAuthGSS int32 = 7
 
-var _ Message = &AuthKerberosV5{}
-var _ Backend = &AuthKerberosV5{}
+var _ Message = &AuthGSS{}
+var _ Backend = &AuthGSS{}
 
-type AuthKerberosV5 struct{}
+type AuthGSS struct{}
 
-func (x *AuthKerberosV5) message() {}
+func (x *AuthGSS) message() {}
 
-func (x *AuthKerberosV5) backend() {}
+func (x *AuthGSS) backend() {}
 
-func (x *AuthKerberosV5) AppendBinary(b []byte) ([]byte, error) {
+func (x *AuthGSS) AppendBinary(b []byte) ([]byte, error) {
 	const length = sizeMessageLength + sizeAuthKind
 	const size = sizeMessageKind + length
 
@@ -23,11 +23,11 @@ func (x *AuthKerberosV5) AppendBinary(b []byte) ([]byte, error) {
 	buf.Grow(size)
 	buf.AppendByte(KindAuthentication)
 	buf.AppendInt32(int32(length))
-	buf.AppendInt32(KindAuthKerberosV5)
+	buf.AppendInt32(KindAuthGSS)
 	return buf.Bytes(), nil
 }
 
-func (x *AuthKerberosV5) UnmarshalBinary(b []byte) error {
+func (x *AuthGSS) UnmarshalBinary(b []byte) error {
 	msgKind, b, err := ShiftHeader(b)
 	if err != nil {
 		return invalidFormat(err)
@@ -42,10 +42,9 @@ func (x *AuthKerberosV5) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != KindAuthKerberosV5 {
-		return unexpectedAuthKind(authKind, KindAuthKerberosV5)
+	if authKind != KindAuthGSS {
+		return unexpectedAuthKind(authKind, KindAuthGSS)
 	}
-
 	if len(b) > 0 {
 		return invalidFormat(bytex.ErrValueOverflow)
 	}

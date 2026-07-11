@@ -1,32 +1,23 @@
-package bx
+package bytex
 
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"io"
 	"slices"
 	"unsafe"
 )
 
-var (
-	ErrValueUnderflow     = errors.New("partial value")
-	ErrValueOverflow      = errors.New("value too large")
-	ErrUnknownMessageType = errors.New("unknown message type")
-	ErrUnknownAuthType    = errors.New("unknown authentication type")
-	ErrUnknownCode        = errors.New("unknown code")
-)
-
 func ShiftByte(b []byte) (byte, []byte, error) {
 	if len(b) == 0 {
-		return 0, nil, io.EOF
+		return 0, b, io.EOF
 	}
 	return b[0], b[1:], nil
 }
 
 func ShiftBytes(b []byte, length int) ([]byte, []byte, error) {
 	if len(b) < length {
-		return nil, nil, ErrValueUnderflow
+		return nil, b, ErrValueUnderflow
 	}
 	output := make([]byte, length)
 	copy(output, b[:length])
@@ -36,14 +27,14 @@ func ShiftBytes(b []byte, length int) ([]byte, []byte, error) {
 func ShiftInt8(b []byte) (int8, []byte, error) {
 	v, b, err := ShiftByte(b)
 	if err != nil {
-		return 0, nil, err
+		return 0, b, err
 	}
 	return int8(v), b, nil
 }
 
 func ShiftInt16(b []byte) (int16, []byte, error) {
 	if len(b) < 2 {
-		return 0, nil, ErrValueUnderflow
+		return 0, b, ErrValueUnderflow
 	}
 	i := int16(binary.BigEndian.Uint16(b))
 	return i, b[2:], nil
@@ -51,7 +42,7 @@ func ShiftInt16(b []byte) (int16, []byte, error) {
 
 func ShiftInt32(b []byte) (int32, []byte, error) {
 	if len(b) < 4 {
-		return 0, nil, ErrValueUnderflow
+		return 0, b, ErrValueUnderflow
 	}
 	i := int32(binary.BigEndian.Uint32(b))
 	return i, b[4:], nil
@@ -64,7 +55,7 @@ func ShiftString(b []byte) (string, []byte, error) {
 	if found {
 		return unsafe.String(unsafe.SliceData(s), len(s)), b, nil
 	}
-	return "", nil, ErrValueUnderflow
+	return "", b, ErrValueUnderflow
 }
 
 func AppendByte(b []byte, i ...byte) []byte {
@@ -105,6 +96,7 @@ func AppendInt64(b []byte, i ...int64) []byte {
 
 func AppendString(b []byte, s ...string) []byte {
 	for _, v := range s {
+		b = slices.Grow(b, len(v)+1)
 		b = append(b, []byte(v)...)
 		b = append(b, 0)
 	}

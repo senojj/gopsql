@@ -1,8 +1,7 @@
 package msg
 
 import (
-	"gopsql/internal/bx"
-	"slices"
+	"gopsql/internal/bytex"
 )
 
 const KindAuthMD5Password int32 = 5
@@ -11,23 +10,25 @@ var _ Message = &AuthMD5Password{}
 var _ Backend = &AuthMD5Password{}
 
 type AuthMD5Password struct {
-	msg
-	back
-
 	Salt [4]byte
 }
+
+func (x *AuthMD5Password) message() {}
+
+func (x *AuthMD5Password) backend() {}
 
 func (x *AuthMD5Password) AppendBinary(b []byte) ([]byte, error) {
 	const sizeSalt = 4
 	const length = sizeMessageLength + sizeAuthKind + sizeSalt
 	const size = sizeMessageKind + length
 
-	b = slices.Grow(b, size)
-	b = bx.AppendByte(b, KindAuthentication)
-	b = bx.AppendInt32(b, int32(length))
-	b = bx.AppendInt32(b, KindAuthMD5Password)
-	b = bx.AppendByte(b, x.Salt[:]...)
-	return b, nil
+	buf := bytex.NewBuffer(b)
+	buf.Grow(size)
+	buf.AppendByte(KindAuthentication)
+	buf.AppendInt32(int32(length))
+	buf.AppendInt32(KindAuthMD5Password)
+	buf.AppendByte(x.Salt[:]...)
+	return buf.Bytes(), nil
 }
 
 func (x *AuthMD5Password) UnmarshalBinary(b []byte) error {
@@ -40,7 +41,7 @@ func (x *AuthMD5Password) UnmarshalBinary(b []byte) error {
 		return unexpectedKind(msgKind, KindAuthentication)
 	}
 
-	authKind, b, err := bx.ShiftInt32(b)
+	authKind, b, err := bytex.ShiftInt32(b)
 	if err != nil {
 		return invalidFormat(err)
 	}
