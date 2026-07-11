@@ -2,7 +2,6 @@ package msg
 
 import (
 	"gopsql/internal/bytex"
-	"slices"
 )
 
 const KindNoData byte = 'n'
@@ -10,19 +9,21 @@ const KindNoData byte = 'n'
 var _ Message = &NoData{}
 var _ Backend = &NoData{}
 
-type NoData struct {
-	msg
-	back
-}
+type NoData struct{}
+
+func (x *NoData) message() {}
+
+func (x *NoData) backend() {}
 
 func (x *NoData) AppendBinary(b []byte) ([]byte, error) {
 	const length = sizeMessageLength
 	const size = sizeMessageKind + length
 
-	b = slices.Grow(b, size)
-	b = bytex.AppendByte(b, KindNoData)
-	b = bytex.AppendInt32(b, length)
-	return b, nil
+	buf := bytex.NewBuffer(b)
+	buf.Grow(size)
+	buf.AppendByte(KindNoData)
+	buf.AppendInt32(length)
+	return buf.Bytes(), nil
 }
 
 func (x *NoData) UnmarshalBinary(b []byte) error {

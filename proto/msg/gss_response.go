@@ -3,7 +3,6 @@ package msg
 import (
 	"gopsql/internal/bytex"
 	"math"
-	"slices"
 )
 
 const KindGSSResponse byte = 'p'
@@ -12,11 +11,12 @@ var _ Message = &GSSResponse{}
 var _ Frontend = &GSSResponse{}
 
 type GSSResponse struct {
-	msg
-	front
-
 	Data []byte
 }
+
+func (x *GSSResponse) message() {}
+
+func (x *GSSResponse) frontend() {}
 
 func (x *GSSResponse) AppendBinary(b []byte) ([]byte, error) {
 	length := sizeMessageLength + len(x.Data)
@@ -26,11 +26,12 @@ func (x *GSSResponse) AppendBinary(b []byte) ([]byte, error) {
 	}
 	size := sizeMessageKind + length
 
-	b = slices.Grow(b, size)
-	b = bytex.AppendByte(b, KindGSSResponse)
-	b = bytex.AppendInt32(b, int32(length))
-	b = bytex.AppendByte(b, x.Data...)
-	return b, nil
+	buf := bytex.NewBuffer(b)
+	buf.Grow(size)
+	buf.AppendByte(KindGSSResponse)
+	buf.AppendInt32(int32(length))
+	buf.AppendByte(x.Data...)
+	return buf.Bytes(), nil
 }
 
 func (x *GSSResponse) UnmarshalBinary(b []byte) error {

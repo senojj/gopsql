@@ -3,7 +3,6 @@ package msg
 import (
 	"gopsql/internal/bytex"
 	"math"
-	"slices"
 )
 
 const KindNegotiateProtocolVersion byte = 'v'
@@ -12,12 +11,13 @@ var _ Message = &NegotiateProtocolVersion{}
 var _ Backend = &NegotiateProtocolVersion{}
 
 type NegotiateProtocolVersion struct {
-	msg
-	back
-
 	MinorVersionSupported int32
 	UnrecognizedOptions   []string
 }
+
+func (x *NegotiateProtocolVersion) message() {}
+
+func (x *NegotiateProtocolVersion) backend() {}
 
 func (x *NegotiateProtocolVersion) AppendBinary(b []byte) ([]byte, error) {
 	const sizeMinorVersion = 4
@@ -43,13 +43,14 @@ func (x *NegotiateProtocolVersion) AppendBinary(b []byte) ([]byte, error) {
 
 	size := sizeMessageKind + length
 
-	b = slices.Grow(b, size)
-	b = bytex.AppendByte(b, KindNegotiateProtocolVersion)
-	b = bytex.AppendInt32(b, int32(length))
-	b = bytex.AppendInt32(b, x.MinorVersionSupported)
-	b = bytex.AppendInt32(b, int32(countUnrecognizedOptions))
-	b = bytex.AppendString(b, x.UnrecognizedOptions...)
-	return b, nil
+	buf := bytex.NewBuffer(b)
+	buf.Grow(size)
+	buf.AppendByte(KindNegotiateProtocolVersion)
+	buf.AppendInt32(int32(length))
+	buf.AppendInt32(x.MinorVersionSupported)
+	buf.AppendInt32(int32(countUnrecognizedOptions))
+	buf.AppendString(x.UnrecognizedOptions...)
+	return buf.Bytes(), nil
 }
 
 func (x *NegotiateProtocolVersion) UnmarshalBinary(b []byte) error {
@@ -62,12 +63,14 @@ func (x *NegotiateProtocolVersion) UnmarshalBinary(b []byte) error {
 		return unexpectedKind(kind, KindNegotiateProtocolVersion)
 	}
 
-	minorVersion, b, err := bytex.ShiftInt32(b)
+	buf := bytex.NewBuffer(b)
+
+	minorVersion, err := buf.ShiftInt32()
 	if err != nil {
 		return invalidFormat(err)
 	}
 
-	countUnsupportedOptions, b, err := bytex.ShiftInt32(b)
+	countUnsupportedOptions, err := buf.ShiftInt32()
 	if err != nil {
 		return invalidFormat(err)
 	}
@@ -75,8 +78,7 @@ func (x *NegotiateProtocolVersion) UnmarshalBinary(b []byte) error {
 	options := make([]string, 0, countUnsupportedOptions)
 
 	for range countUnsupportedOptions {
-		var option string
-		option, b, err = bytex.ShiftString(b)
+		option, err := buf.ShiftString()
 		if err != nil {
 			return invalidFormat(err)
 		}

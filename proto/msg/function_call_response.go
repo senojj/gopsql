@@ -3,7 +3,6 @@ package msg
 import (
 	"gopsql/internal/bytex"
 	"math"
-	"slices"
 )
 
 const KindFunctionCallResponse byte = 'V'
@@ -12,12 +11,13 @@ var _ Message = &FunctionCallResponse{}
 var _ Backend = &FunctionCallResponse{}
 
 type FunctionCallResponse struct {
-	msg
-	back
-
 	// Can be zero length or nil.
 	Result []byte
 }
+
+func (x *FunctionCallResponse) message() {}
+
+func (x *FunctionCallResponse) backend() {}
 
 func (x *FunctionCallResponse) AppendBinary(b []byte) ([]byte, error) {
 	const sizeResultLength = 4
@@ -33,17 +33,18 @@ func (x *FunctionCallResponse) AppendBinary(b []byte) ([]byte, error) {
 
 	size := sizeMessageKind + length
 
-	b = slices.Grow(b, size)
-	b = bytex.AppendByte(b, KindFunctionCallResponse)
-	b = bytex.AppendInt32(b, int32(length))
+	buf := bytex.NewBuffer(b)
+	buf.Grow(size)
+	buf.AppendByte(KindFunctionCallResponse)
+	buf.AppendInt32(int32(length))
 
 	if x.Result == nil {
-		b = bytex.AppendInt32(b, int32(-1))
+		buf.AppendInt32(int32(-1))
 	} else {
-		b = bytex.AppendInt32(b, int32(sizeResult))
+		buf.AppendInt32(int32(sizeResult))
 	}
-	b = bytex.AppendByte(b, x.Result...)
-	return b, nil
+	buf.AppendByte(x.Result...)
+	return buf.Bytes(), nil
 }
 
 func (x *FunctionCallResponse) UnmarshalBinary(b []byte) error {

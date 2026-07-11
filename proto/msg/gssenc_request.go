@@ -2,7 +2,6 @@ package msg
 
 import (
 	"gopsql/internal/bytex"
-	"slices"
 )
 
 var _ Message = &GSSENCRequest{}
@@ -24,10 +23,11 @@ func (x *GSSENCRequest) AppendBinary(b []byte) ([]byte, error) {
 	const sizeCode = 4
 	const length = sizeMessageLength + sizeCode
 
-	b = slices.Grow(b, length)
-	b = bytex.AppendInt32(b, length)
-	b = bytex.AppendInt32(b, CodeEncryptionRequest)
-	return b, nil
+	buf := bytex.NewBuffer(b)
+	buf.Grow(length)
+	buf.AppendInt32(length)
+	buf.AppendInt32(CodeEncryptionRequest)
+	return buf.Bytes(), nil
 }
 
 func (x *GSSENCRequest) UnmarshalBinary(b []byte) error {

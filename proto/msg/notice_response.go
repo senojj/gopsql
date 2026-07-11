@@ -3,7 +3,6 @@ package msg
 import (
 	"gopsql/internal/bytex"
 	"math"
-	"slices"
 )
 
 const KindNoticeResponse byte = 'N'
@@ -12,12 +11,13 @@ var _ Message = &NoticeResponse{}
 var _ Backend = &NoticeResponse{}
 
 type NoticeResponse struct {
-	msg
-	back
-
 	Fields []byte
 	Values []string
 }
+
+func (x *NoticeResponse) message() {}
+
+func (x *NoticeResponse) backend() {}
 
 func (x *NoticeResponse) AppendBinary(b []byte) ([]byte, error) {
 	countFields := len(x.Fields)
@@ -39,16 +39,17 @@ func (x *NoticeResponse) AppendBinary(b []byte) ([]byte, error) {
 
 	size := sizeMessageKind + length
 
-	b = slices.Grow(b, size)
-	b = bytex.AppendByte(b, KindNoticeResponse)
-	b = bytex.AppendInt32(b, int32(length))
+	buf := bytex.NewBuffer(b)
+	buf.Grow(size)
+	buf.AppendByte(KindNoticeResponse)
+	buf.AppendInt32(int32(length))
 
 	for i := range countFields {
-		b = bytex.AppendByte(b, x.Fields[i])
-		b = bytex.AppendString(b, x.Values[i])
+		buf.AppendByte(x.Fields[i])
+		buf.AppendString(x.Values[i])
 	}
-	b = bytex.AppendByte(b, 0)
-	return b, nil
+	buf.AppendByte(0)
+	return buf.Bytes(), nil
 }
 
 func (x *NoticeResponse) UnmarshalBinary(b []byte) error {
@@ -61,7 +62,9 @@ func (x *NoticeResponse) UnmarshalBinary(b []byte) error {
 		return unexpectedKind(kind, KindNoticeResponse)
 	}
 
-	field, b, err := bytex.ShiftByte(b)
+	buf := bytex.NewBuffer(b)
+
+	field, err := buf.ShiftByte()
 	if err != nil {
 		return invalidFormat(err)
 	}
@@ -72,14 +75,13 @@ func (x *NoticeResponse) UnmarshalBinary(b []byte) error {
 	for field != 0 {
 		fields = append(fields, field)
 
-		var value string
-		value, b, err = bytex.ShiftString(b)
+		value, err := buf.ShiftString()
 		if err != nil {
 			return invalidFormat(err)
 		}
 		values = append(values, value)
 
-		field, b, err = bytex.ShiftByte(b)
+		field, err = buf.ShiftByte()
 		if err != nil {
 			return invalidFormat(err)
 		}
