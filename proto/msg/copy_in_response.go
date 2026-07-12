@@ -27,7 +27,7 @@ func (x *CopyInResponse) AppendBinary(b []byte) ([]byte, error) {
 	countCols := len(x.Columns)
 
 	if countCols > math.MaxInt16 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	sizeCols := countCols * sizeCol
@@ -38,7 +38,7 @@ func (x *CopyInResponse) AppendBinary(b []byte) ([]byte, error) {
 		sizeCols
 
 	if length > math.MaxInt32 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	size := sizeMessageKind + length

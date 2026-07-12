@@ -23,7 +23,7 @@ func (x *NoticeResponse) AppendBinary(b []byte) ([]byte, error) {
 	countFields := len(x.Fields)
 
 	if countFields != len(x.Values) {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	length := sizeMessageLength + countFields
@@ -34,7 +34,7 @@ func (x *NoticeResponse) AppendBinary(b []byte) ([]byte, error) {
 	length += 1 // null terminated list
 
 	if length > math.MaxInt32 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	size := sizeMessageKind + length

@@ -28,7 +28,7 @@ func (x *DataRow) AppendBinary(b []byte) ([]byte, error) {
 	countCols := len(x.Columns)
 
 	if countCols > math.MaxInt16 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	sizeCols := 0
@@ -37,7 +37,7 @@ func (x *DataRow) AppendBinary(b []byte) ([]byte, error) {
 		lengthCol := len(x.Columns[i])
 
 		if lengthCol > math.MaxInt32 {
-			return nil, invalidFormat(bytex.ErrValueOverflow)
+			return b, invalidFormat(bytex.ErrValueOverflow)
 		}
 		sizeCols += sizeColLength + lengthCol
 	}
@@ -47,7 +47,7 @@ func (x *DataRow) AppendBinary(b []byte) ([]byte, error) {
 		sizeCols
 
 	if length > math.MaxInt32 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	size := sizeMessageKind + length

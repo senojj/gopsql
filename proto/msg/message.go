@@ -11,7 +11,6 @@ import (
 
 const (
 	KindAuthentication  byte = 'R'
-	KindParameterStatus byte = 'S'
 	KindParseComplete   byte = '1'
 	KindPortalSuspended byte = 's'
 	KindReadyForQuery   byte = 'Z'
@@ -112,54 +111,16 @@ type Message interface {
 	message()
 }
 
-type msg struct{}
-
-func (x msg) message() {}
-
 type Backend interface {
 	Message
 
 	backend()
 }
 
-type back struct{}
-
-func (x back) backend() {}
-
 type Frontend interface {
 	Message
 
 	frontend()
-}
-
-type front struct{}
-
-func (x front) frontend() {}
-
-type MsgParameterStatus struct {
-	Name  string
-	Value string
-}
-
-func (x *MsgParameterStatus) Encode(w io.Writer) error {
-	var buf bytes.Buffer
-	_ = writeString(&buf, x.Name)
-	_ = writeString(&buf, x.Value)
-	return writeMessage(w, msgKindParameterStatus, buf.Bytes())
-}
-
-func (x *MsgParameterStatus) Decode(b []byte) error {
-	bread, err := readString(b, &x.Name)
-	if err != nil {
-		return err
-	}
-	b = b[bread:]
-
-	_, err = readString(b, &x.Value)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 type MsgParseComplete struct{}

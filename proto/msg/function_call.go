@@ -38,13 +38,13 @@ func (x *FunctionCall) AppendBinary(b []byte) ([]byte, error) {
 	countFormats := len(x.ArgumentFormats)
 
 	if countFormats > math.MaxInt16 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	countArguments := len(x.ArgumentValues)
 
 	if countArguments > math.MaxInt16 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	sizeFormats := countFormats * sizeFormat
@@ -54,7 +54,7 @@ func (x *FunctionCall) AppendBinary(b []byte) ([]byte, error) {
 		sizeArgumentValue := len(x.ArgumentValues[i])
 
 		if sizeArgumentValue > math.MaxInt32 {
-			return nil, invalidFormat(bytex.ErrValueOverflow)
+			return b, invalidFormat(bytex.ErrValueOverflow)
 		}
 		sizeArguments += sizeArgumentLength + sizeArgumentValue
 	}
@@ -68,7 +68,7 @@ func (x *FunctionCall) AppendBinary(b []byte) ([]byte, error) {
 		sizeResultFormat
 
 	if length > math.MaxInt32 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	size := sizeMessageKind + length

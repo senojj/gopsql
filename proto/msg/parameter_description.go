@@ -29,7 +29,7 @@ func (x *ParameterDescription) AppendBinary(b []byte) ([]byte, error) {
 		sizeParameter*countParameter
 
 	if length > math.MaxInt32 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	size := sizeMessageKind + length

@@ -30,7 +30,7 @@ func (x *NegotiateProtocolVersion) AppendBinary(b []byte) ([]byte, error) {
 	countUnrecognizedOptions := len(x.UnrecognizedOptions)
 
 	if countUnrecognizedOptions > math.MaxInt32 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	for _, option := range x.UnrecognizedOptions {
@@ -38,7 +38,7 @@ func (x *NegotiateProtocolVersion) AppendBinary(b []byte) ([]byte, error) {
 	}
 
 	if length > math.MaxInt32 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	size := sizeMessageKind + length

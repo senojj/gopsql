@@ -32,7 +32,7 @@ func (x *NotificationResponse) AppendBinary(b []byte) ([]byte, error) {
 		sizePayload
 
 	if length > math.MaxInt32 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	size := sizeMessageKind + length

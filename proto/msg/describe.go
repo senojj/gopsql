@@ -27,7 +27,7 @@ func (x *Describe) AppendBinary(b []byte) ([]byte, error) {
 		len(x.Name) + 1 // null terminated string
 
 	if length > math.MaxInt32 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	size := sizeMessageKind + length

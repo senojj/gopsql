@@ -24,7 +24,7 @@ func (x *FunctionCallResponse) AppendBinary(b []byte) ([]byte, error) {
 	sizeResult := len(x.Result)
 
 	if sizeResult > math.MaxInt32 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	length := sizeMessageLength +

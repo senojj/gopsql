@@ -24,17 +24,17 @@ func (x *BackendKeyData) AppendBinary(b []byte) ([]byte, error) {
 	sizeSecretKey := len(x.SecretKey)
 
 	if sizeSecretKey < 4 {
-		return nil, invalidFormat(bytex.ErrValueUnderflow)
+		return b, invalidFormat(bytex.ErrValueUnderflow)
 	}
 
 	if sizeSecretKey > 256 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	length := sizeMessageLength + sizeProcessID + sizeSecretKey
 
 	if length > math.MaxInt32 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	size := sizeMessageKind + length

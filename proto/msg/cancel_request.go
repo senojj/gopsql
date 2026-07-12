@@ -29,11 +29,11 @@ func (x *CancelRequest) AppendBinary(b []byte) ([]byte, error) {
 	sizeSecretKey := len(x.SecretKey)
 
 	if sizeSecretKey > 256 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	if sizeSecretKey < 4 {
-		return nil, invalidFormat(bytex.ErrValueUnderflow)
+		return b, invalidFormat(bytex.ErrValueUnderflow)
 	}
 
 	length := sizeMessageLength +

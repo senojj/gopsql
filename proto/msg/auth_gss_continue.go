@@ -2,6 +2,7 @@ package msg
 
 import (
 	"gopsql/internal/bytex"
+	"math"
 )
 
 const KindAuthGSSContinue int32 = 8
@@ -20,6 +21,11 @@ func (x *AuthGSSContinue) backend() {}
 func (x *AuthGSSContinue) AppendBinary(b []byte) ([]byte, error) {
 	sizeData := len(x.Data)
 	length := sizeMessageLength + sizeAuthKind + sizeData
+
+	if length > math.MaxInt32 {
+		return b, invalidFormat(bytex.ErrValueOverflow)
+	}
+
 	size := sizeMessageKind + length
 
 	buf := bytex.NewBuffer(b)

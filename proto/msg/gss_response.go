@@ -22,7 +22,7 @@ func (x *GSSResponse) AppendBinary(b []byte) ([]byte, error) {
 	length := sizeMessageLength + len(x.Data)
 
 	if length > math.MaxInt32 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 	size := sizeMessageKind + length
 

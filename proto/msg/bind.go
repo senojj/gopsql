@@ -35,14 +35,14 @@ func (x *Bind) AppendBinary(b []byte) ([]byte, error) {
 
 	paramFmtCodeCount := len(x.ParameterFormatCodes)
 	if paramFmtCodeCount > math.MaxInt16 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	sizeParamFmtCodes := paramFmtCodeCount * sizeParamFmtCode
 
 	paramDataCount := len(x.ParameterData)
 	if paramDataCount > math.MaxInt16 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	sizeParamData := 0
@@ -50,14 +50,14 @@ func (x *Bind) AppendBinary(b []byte) ([]byte, error) {
 	for i := range paramDataCount {
 		length := len(x.ParameterData[i])
 		if length > math.MaxInt32 {
-			return nil, invalidFormat(bytex.ErrValueOverflow)
+			return b, invalidFormat(bytex.ErrValueOverflow)
 		}
 		sizeParamData += sizeParamDatum + length // size prefixed
 	}
 
 	colFmtCodeCount := len(x.ColumnFormatCodes)
 	if colFmtCodeCount > math.MaxInt16 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	sizeColFmtCodes := colFmtCodeCount * sizeColFmtCode
@@ -73,7 +73,7 @@ func (x *Bind) AppendBinary(b []byte) ([]byte, error) {
 		sizeColFmtCodes
 
 	if length > math.MaxInt32 {
-		return nil, invalidFormat(bytex.ErrValueOverflow)
+		return b, invalidFormat(bytex.ErrValueOverflow)
 	}
 
 	size := sizeMessageKind + length
