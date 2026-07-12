@@ -10,14 +10,12 @@ import (
 )
 
 const (
-	KindAuthentication       byte = 'R'
-	KindNotificationResponse byte = 'A'
-	KindParameterDescription byte = 't'
-	KindParameterStatus      byte = 'S'
-	KindParseComplete        byte = '1'
-	KindPortalSuspended      byte = 's'
-	KindReadyForQuery        byte = 'Z'
-	KindRowDescription       byte = 'T'
+	KindAuthentication  byte = 'R'
+	KindParameterStatus byte = 'S'
+	KindParseComplete   byte = '1'
+	KindPortalSuspended byte = 's'
+	KindReadyForQuery   byte = 'Z'
+	KindRowDescription  byte = 'T'
 )
 
 const (
@@ -137,75 +135,6 @@ type Frontend interface {
 type front struct{}
 
 func (x front) frontend() {}
-
-type MsgNotificationResponse struct {
-	ProcessID int32
-	Channel   string
-	Payload   string
-}
-
-func (x *MsgNotificationResponse) Encode(w io.Writer) error {
-	var buf bytes.Buffer
-	_ = writeInt32(&buf, x.ProcessID)
-	_ = writeString(&buf, x.Channel)
-	_ = writeString(&buf, x.Payload)
-	return writeMessage(w, msgKindNotificationResponse, buf.Bytes())
-}
-
-func (x *MsgNotificationResponse) Decode(b []byte) error {
-	bread, err := readInt32(b, &x.ProcessID)
-	if err != nil {
-		return err
-	}
-	b = b[bread:]
-
-	bread, err = readString(b, &x.Channel)
-	if err != nil {
-		return err
-	}
-	b = b[bread:]
-
-	_, err = readString(b, &x.Payload)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type MsgParameterDescription struct {
-	Parameters []int32
-}
-
-func (x *MsgParameterDescription) Encode(w io.Writer) error {
-	var buf bytes.Buffer
-	_ = writeInt16(&buf, int16(len(x.Parameters)))
-	for _, param := range x.Parameters {
-		_ = writeInt32(&buf, param)
-	}
-	return writeMessage(w, msgKindParameterDescription, buf.Bytes())
-}
-
-func (x *MsgParameterDescription) Decode(b []byte) error {
-	var length int16
-	bread, err := readInt16(b, &length)
-	if err != nil {
-		return err
-	}
-	b = b[bread:]
-
-	x.Parameters = make([]int32, length)
-
-	for i := range length {
-		var param int32
-		bread, err = readInt32(b, &param)
-		if err != nil {
-			return err
-		}
-		x.Parameters[i] = param
-		b = b[bread:]
-	}
-	return nil
-}
 
 type MsgParameterStatus struct {
 	Name  string
