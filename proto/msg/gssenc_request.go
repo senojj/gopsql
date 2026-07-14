@@ -44,5 +44,9 @@ func (x *GSSENCRequest) UnmarshalBinary(b []byte) error {
 	if code != CodeEncryptionRequest {
 		return invalidFormat(bytex.ErrUnknownCode)
 	}
+
+	if len(b) > 0 {
+		return invalidFormat(bytex.ErrValueOverflow)
+	}
 	return nil
 }

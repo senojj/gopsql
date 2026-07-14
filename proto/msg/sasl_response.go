@@ -39,5 +39,16 @@ func (x *SASLResponse) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *SASLResponse) UnmarshalBinary(b []byte) error {
+	kind, b, err := ShiftHeader(b)
+	if err != nil {
+		return invalidFormat(err)
+	}
 
+	if kind != KindSASLResponse {
+		return unexpectedKind(kind, KindSASLResponse)
+	}
+
+	x.Data = make([]byte, len(b))
+	copy(x.Data, b)
+	return nil
 }

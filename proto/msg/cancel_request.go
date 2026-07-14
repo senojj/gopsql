@@ -4,14 +4,14 @@ import (
 	"gopsql/internal/bytex"
 )
 
-var _ Message = &CancelRequest{}
-var _ Frontend = &CancelRequest{}
-
 const (
 	cancelHigh        int32 = 1234
 	cancelLow         int32 = 5678
 	CodeCancelRequest int32 = cancelLow | cancelHigh<<16
 )
+
+var _ Message = &CancelRequest{}
+var _ Frontend = &CancelRequest{}
 
 type CancelRequest struct {
 	ProcessID int32
@@ -55,12 +55,25 @@ func (x *CancelRequest) UnmarshalBinary(b []byte) error {
 	if err != nil {
 		return invalidFormat(err)
 	}
-	processID, b, err := bytex.ShiftInt32(b)
+
+	buf := bytex.NewBuffer(b)
+
+	code, err := buf.ShiftInt32()
+	if err != nil {
+		return invalidFormat(err)
+	}
+
+	if code != CodeCancelRequest {
+		return invalidFormat(bytex.ErrUnknownCode)
+	}
+
+	processID, err := buf.ShiftInt32()
 	if err != nil {
 		return err
 	}
+
 	x.ProcessID = processID
-	x.SecretKey = make([]byte, len(b))
-	copy(x.SecretKey, b)
+	x.SecretKey = make([]byte, buf.Len())
+	copy(x.SecretKey, buf.Bytes())
 	return nil
 }

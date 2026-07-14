@@ -9,17 +9,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func unmarshal(t *testing.T, b []byte, m msg.Message) {
+	err := m.UnmarshalBinary(b)
+	require.NoError(t, err)
+}
+
+func marshal(t *testing.T, expected []byte, m msg.Message) {
+	actual, err := m.AppendBinary(nil)
+	require.NoError(t, err)
+	require.Equal(t, expected, actual)
+}
+
 func TestMessage(t *testing.T) {
 	t.Run("AuthOk", func(t *testing.T) {
-		var b []byte
-		b = bytex.AppendByte(b, msg.KindAuthentication)
-		b = bytex.AppendInt32(b, 8)
-		b = bytex.AppendInt32(b, msg.KindAuthOk)
+		buf := bytex.NewBuffer(nil)
+		buf.AppendByte(msg.KindAuthentication)
+		buf.AppendInt32(8)
+		buf.AppendInt32(msg.KindAuthOk)
 
 		var m msg.AuthOk
 
 		t.Run("UnmarshalBinary", func(t *testing.T) {
-			err := m.UnmarshalBinary(b)
+			err := m.UnmarshalBinary(buf.Bytes())
 			require.NoError(t, err)
 		})
 
