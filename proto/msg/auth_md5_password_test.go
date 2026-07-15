@@ -8,24 +8,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAuthOk(t *testing.T) {
+func TestAuthMD5Password(t *testing.T) {
 	t.Parallel()
 
 	buf := bytex.NewBuffer(nil)
 	buf.AppendByte(msg.KindAuthentication)
-	buf.AppendInt32(8)
-	buf.AppendInt32(msg.KindAuthOk)
+	buf.AppendInt32(12)
+	buf.AppendInt32(msg.KindAuthMD5Password)
+	buf.AppendByte([]byte("4321")...)
 
-	var m msg.AuthOk
+	var m msg.AuthMD5Password
 
 	t.Run("UnmarshalBinary", func(t *testing.T) {
 		err := m.UnmarshalBinary(buf.Bytes())
 		require.NoError(t, err)
+		require.Equal(t, "4321", string(m.Salt[:]))
 	})
 
 	t.Run("AppendBinary", func(t *testing.T) {
-		result, err := m.AppendBinary(nil)
+		b, err := m.AppendBinary(nil)
 		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), result)
+		require.Equal(t, buf.Bytes(), b)
 	})
 }

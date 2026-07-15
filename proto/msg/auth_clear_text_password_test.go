@@ -8,15 +8,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAuthOk(t *testing.T) {
+func TestAuthClearTextPassword(t *testing.T) {
 	t.Parallel()
 
 	buf := bytex.NewBuffer(nil)
 	buf.AppendByte(msg.KindAuthentication)
 	buf.AppendInt32(8)
-	buf.AppendInt32(msg.KindAuthOk)
+	buf.AppendInt32(msg.KindAuthCleartextPassword)
 
-	var m msg.AuthOk
+	var m msg.AuthCleartextPassword
 
 	t.Run("UnmarshalBinary", func(t *testing.T) {
 		err := m.UnmarshalBinary(buf.Bytes())

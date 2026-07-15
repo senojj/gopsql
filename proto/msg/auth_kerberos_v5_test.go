@@ -9,6 +9,8 @@ import (
 )
 
 func TestAuthKerberosV5(t *testing.T) {
+	t.Parallel()
+
 	buf := bytex.NewBuffer(nil)
 	buf.AppendByte(msg.KindAuthentication)
 	buf.AppendInt32(8)
@@ -17,7 +19,8 @@ func TestAuthKerberosV5(t *testing.T) {
 	var m msg.AuthKerberosV5
 
 	t.Run("UnmarshalBinary", func(t *testing.T) {
-		unmarshal(t, buf.Bytes(), &m)
+		err := m.UnmarshalBinary(buf.Bytes())
+		require.NoError(t, err)
 	})
 
 	t.Run("AppendBinary", func(t *testing.T) {
