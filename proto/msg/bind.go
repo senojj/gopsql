@@ -168,6 +168,10 @@ func (x *Bind) UnmarshalBinary(b []byte) error {
 		columnFormatCodes[i] = data
 	}
 
+	if buf.Len() > 0 {
+		return invalidFormat(bytex.ErrValueOverflow)
+	}
+
 	x.DestinationName = destination
 	x.SourceName = source
 	x.ParameterFormatCodes = parameterFormatCodes

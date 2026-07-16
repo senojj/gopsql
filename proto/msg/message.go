@@ -33,13 +33,13 @@ const (
 )
 
 const (
-	FormatText   int8 = 0
-	FormatBinary int8 = 1
+	FormatText8   int8 = 0
+	FormatBinary8 int8 = 1
 )
 
 const (
-	ColumnFormatText   int16 = 0
-	ColumnFormatBinary int16 = 1
+	FormatText16   int16 = int16(FormatText8)
+	FormatBinary16 int16 = int16(FormatBinary8)
 )
 
 const (
