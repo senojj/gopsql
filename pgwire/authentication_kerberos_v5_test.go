@@ -8,15 +8,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAuthClearTextPassword(t *testing.T) {
+func TestAuthKerberosV5(t *testing.T) {
 	t.Parallel()
 
 	buf := pgio.NewBuffer(nil)
 	buf.AppendByte(pgwire.KindAuthentication)
 	buf.AppendInt32(8)
-	buf.AppendInt32(pgwire.KindAuthCleartextPassword)
+	buf.AppendInt32(pgwire.KindAuthKerberosV5)
 
-	var m pgwire.AuthCleartextPassword
+	var m pgwire.AuthenticationKerberosV5
 
 	t.Run("UnmarshalBinary", func(t *testing.T) {
 		err := m.UnmarshalBinary(buf.Bytes())

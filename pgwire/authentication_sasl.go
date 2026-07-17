@@ -7,18 +7,18 @@ import (
 
 const KindAuthSASL int32 = 10
 
-var _ Message = &AuthSASL{}
-var _ Backend = &AuthSASL{}
+var _ Message = &AuthenticationSASL{}
+var _ Backend = &AuthenticationSASL{}
 
-type AuthSASL struct {
+type AuthenticationSASL struct {
 	Mechanisms []string
 }
 
-func (x *AuthSASL) message() {}
+func (x *AuthenticationSASL) message() {}
 
-func (x *AuthSASL) backend() {}
+func (x *AuthenticationSASL) backend() {}
 
-func (x *AuthSASL) AppendBinary(b []byte) ([]byte, error) {
+func (x *AuthenticationSASL) AppendBinary(b []byte) ([]byte, error) {
 	countMechanisms := len(x.Mechanisms)
 	sizeMechanisms := 0
 
@@ -45,7 +45,7 @@ func (x *AuthSASL) AppendBinary(b []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (x *AuthSASL) UnmarshalBinary(b []byte) error {
+func (x *AuthenticationSASL) UnmarshalBinary(b []byte) error {
 	pgwireKind, b, err := ShiftHeader(b)
 	if err != nil {
 		return invalidFormat(err)

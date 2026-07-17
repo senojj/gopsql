@@ -4,18 +4,18 @@ import (
 	"gopsql/pgio"
 )
 
-const KindAuthSSPI int32 = 9
+const KindAuthGSS int32 = 7
 
-var _ Message = &AuthSSPI{}
-var _ Backend = &AuthSSPI{}
+var _ Message = &AuthenticationGSS{}
+var _ Backend = &AuthenticationGSS{}
 
-type AuthSSPI struct{}
+type AuthenticationGSS struct{}
 
-func (x *AuthSSPI) message() {}
+func (x *AuthenticationGSS) message() {}
 
-func (x *AuthSSPI) backend() {}
+func (x *AuthenticationGSS) backend() {}
 
-func (x *AuthSSPI) AppendBinary(b []byte) ([]byte, error) {
+func (x *AuthenticationGSS) AppendBinary(b []byte) ([]byte, error) {
 	const length = sizeMessageLength + sizeAuthKind
 	const size = sizeMessageKind + length
 
@@ -23,11 +23,11 @@ func (x *AuthSSPI) AppendBinary(b []byte) ([]byte, error) {
 	buf.Grow(size)
 	buf.AppendByte(KindAuthentication)
 	buf.AppendInt32(int32(length))
-	buf.AppendInt32(KindAuthSSPI)
+	buf.AppendInt32(KindAuthGSS)
 	return buf.Bytes(), nil
 }
 
-func (x *AuthSSPI) UnmarshalBinary(b []byte) error {
+func (x *AuthenticationGSS) UnmarshalBinary(b []byte) error {
 	pgwireKind, b, err := ShiftHeader(b)
 	if err != nil {
 		return invalidFormat(err)
@@ -42,10 +42,9 @@ func (x *AuthSSPI) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != KindAuthSSPI {
-		return unexpectedAuthKind(authKind, KindAuthSSPI)
+	if authKind != KindAuthGSS {
+		return unexpectedAuthKind(authKind, KindAuthGSS)
 	}
-
 	if len(b) > 0 {
 		return invalidFormat(pgio.ErrValueOverflow)
 	}

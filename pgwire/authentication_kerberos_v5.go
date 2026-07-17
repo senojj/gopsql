@@ -6,16 +6,16 @@ import (
 
 const KindAuthKerberosV5 int32 = 2
 
-var _ Message = &AuthKerberosV5{}
-var _ Backend = &AuthKerberosV5{}
+var _ Message = &AuthenticationKerberosV5{}
+var _ Backend = &AuthenticationKerberosV5{}
 
-type AuthKerberosV5 struct{}
+type AuthenticationKerberosV5 struct{}
 
-func (x *AuthKerberosV5) message() {}
+func (x *AuthenticationKerberosV5) message() {}
 
-func (x *AuthKerberosV5) backend() {}
+func (x *AuthenticationKerberosV5) backend() {}
 
-func (x *AuthKerberosV5) AppendBinary(b []byte) ([]byte, error) {
+func (x *AuthenticationKerberosV5) AppendBinary(b []byte) ([]byte, error) {
 	const length = sizeMessageLength + sizeAuthKind
 	const size = sizeMessageKind + length
 
@@ -27,7 +27,7 @@ func (x *AuthKerberosV5) AppendBinary(b []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (x *AuthKerberosV5) UnmarshalBinary(b []byte) error {
+func (x *AuthenticationKerberosV5) UnmarshalBinary(b []byte) error {
 	pgwireKind, b, err := ShiftHeader(b)
 	if err != nil {
 		return invalidFormat(err)

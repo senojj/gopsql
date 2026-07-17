@@ -4,18 +4,18 @@ import (
 	"gopsql/pgio"
 )
 
-const KindAuthGSS int32 = 7
+const KindAuthCleartextPassword int32 = 3
 
-var _ Message = &AuthGSS{}
-var _ Backend = &AuthGSS{}
+var _ Message = &AuthenticationCleartextPassword{}
+var _ Backend = &AuthenticationCleartextPassword{}
 
-type AuthGSS struct{}
+type AuthenticationCleartextPassword struct{}
 
-func (x *AuthGSS) message() {}
+func (x *AuthenticationCleartextPassword) message() {}
 
-func (x *AuthGSS) backend() {}
+func (x *AuthenticationCleartextPassword) backend() {}
 
-func (x *AuthGSS) AppendBinary(b []byte) ([]byte, error) {
+func (x *AuthenticationCleartextPassword) AppendBinary(b []byte) ([]byte, error) {
 	const length = sizeMessageLength + sizeAuthKind
 	const size = sizeMessageKind + length
 
@@ -23,11 +23,11 @@ func (x *AuthGSS) AppendBinary(b []byte) ([]byte, error) {
 	buf.Grow(size)
 	buf.AppendByte(KindAuthentication)
 	buf.AppendInt32(int32(length))
-	buf.AppendInt32(KindAuthGSS)
+	buf.AppendInt32(KindAuthCleartextPassword)
 	return buf.Bytes(), nil
 }
 
-func (x *AuthGSS) UnmarshalBinary(b []byte) error {
+func (x *AuthenticationCleartextPassword) UnmarshalBinary(b []byte) error {
 	pgwireKind, b, err := ShiftHeader(b)
 	if err != nil {
 		return invalidFormat(err)
@@ -42,9 +42,10 @@ func (x *AuthGSS) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != KindAuthGSS {
-		return unexpectedAuthKind(authKind, KindAuthGSS)
+	if authKind != KindAuthCleartextPassword {
+		return unexpectedAuthKind(authKind, KindAuthCleartextPassword)
 	}
+
 	if len(b) > 0 {
 		return invalidFormat(pgio.ErrValueOverflow)
 	}

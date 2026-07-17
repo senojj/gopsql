@@ -5,22 +5,21 @@ import (
 	"math"
 )
 
-const KindAuthSASLContinue int32 = 11
+const KindAuthGSSContinue int32 = 8
 
-var _ Message = &AuthSASLContinue{}
-var _ Backend = &AuthSASLContinue{}
+var _ Message = &AuthenticationGSSContinue{}
+var _ Backend = &AuthenticationGSSContinue{}
 
-type AuthSASLContinue struct {
+type AuthenticationGSSContinue struct {
 	Data []byte
 }
 
-func (x *AuthSASLContinue) message() {}
+func (x *AuthenticationGSSContinue) message() {}
 
-func (x *AuthSASLContinue) backend() {}
+func (x *AuthenticationGSSContinue) backend() {}
 
-func (x *AuthSASLContinue) AppendBinary(b []byte) ([]byte, error) {
+func (x *AuthenticationGSSContinue) AppendBinary(b []byte) ([]byte, error) {
 	sizeData := len(x.Data)
-
 	length := sizeMessageLength + sizeAuthKind + sizeData
 
 	if length > math.MaxInt32 {
@@ -33,12 +32,12 @@ func (x *AuthSASLContinue) AppendBinary(b []byte) ([]byte, error) {
 	buf.Grow(size)
 	buf.AppendByte(KindAuthentication)
 	buf.AppendInt32(int32(length))
-	buf.AppendInt32(KindAuthSASLContinue)
+	buf.AppendInt32(KindAuthGSSContinue)
 	buf.AppendByte(x.Data...)
 	return buf.Bytes(), nil
 }
 
-func (x *AuthSASLContinue) UnmarshalBinary(b []byte) error {
+func (x *AuthenticationGSSContinue) UnmarshalBinary(b []byte) error {
 	pgwireKind, b, err := ShiftHeader(b)
 	if err != nil {
 		return invalidFormat(err)
@@ -53,8 +52,8 @@ func (x *AuthSASLContinue) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != KindAuthSASLContinue {
-		return unexpectedAuthKind(authKind, KindAuthSASLContinue)
+	if authKind != KindAuthGSSContinue {
+		return unexpectedAuthKind(authKind, KindAuthGSSContinue)
 	}
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)

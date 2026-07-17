@@ -8,27 +8,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAuthGSSContinue(t *testing.T) {
+func TestAuthGSS(t *testing.T) {
 	t.Parallel()
 
 	buf := pgio.NewBuffer(nil)
 	buf.AppendByte(pgwire.KindAuthentication)
-	buf.AppendInt32(19)
-	buf.AppendInt32(pgwire.KindAuthGSSContinue)
-	buf.AppendByte([]byte("hello world")...)
+	buf.AppendInt32(8)
+	buf.AppendInt32(pgwire.KindAuthGSS)
 
-	var m pgwire.AuthGSSContinue
+	var m pgwire.AuthenticationGSS
 
 	t.Run("UnmarshalBinary", func(t *testing.T) {
 		err := m.UnmarshalBinary(buf.Bytes())
 		require.NoError(t, err)
-
-		require.Equal(t, "hello world", string(m.Data))
 	})
 
 	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
+		result, err := m.AppendBinary(nil)
 		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
+		require.Equal(t, buf.Bytes(), result)
 	})
 }
