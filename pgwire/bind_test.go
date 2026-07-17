@@ -17,7 +17,7 @@ func TestBind(t *testing.T) {
 	buf.AppendString("hello world")
 	buf.AppendString("lorem ipsum")
 	buf.AppendInt16(3)
-	buf.AppendInt16(pgwire.FormatBinary16, pgwire.FormatBinary16, pgwire.FormatBinary16)
+	buf.AppendInt16(int16(pgwire.FmtBinary), int16(pgwire.FmtBinary), int16(pgwire.FmtBinary))
 	buf.AppendInt16(3)
 	buf.AppendInt32(5)
 	buf.AppendByte([]byte("lorem")...)
@@ -26,7 +26,7 @@ func TestBind(t *testing.T) {
 	buf.AppendInt32(5)
 	buf.AppendByte([]byte("dolor")...)
 	buf.AppendInt16(3)
-	buf.AppendInt16(pgwire.FormatBinary16, pgwire.FormatBinary16, pgwire.FormatBinary16)
+	buf.AppendInt16(int16(pgwire.FmtBinary), int16(pgwire.FmtBinary), int16(pgwire.FmtBinary))
 
 	var m pgwire.Bind
 
@@ -35,9 +35,9 @@ func TestBind(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "hello world", m.DestinationName)
 		require.Equal(t, "lorem ipsum", m.SourceName)
-		require.Equal(t, []int16{pgwire.FormatBinary16, pgwire.FormatBinary16, pgwire.FormatBinary16}, m.ParameterFormatCodes)
+		require.Equal(t, []int16{int16(pgwire.FmtBinary), int16(pgwire.FmtBinary), int16(pgwire.FmtBinary)}, m.ParameterFormatCodes)
 		require.Equal(t, [][]byte{[]byte("lorem"), []byte("ipsum"), []byte("dolor")}, m.ParameterData)
-		require.Equal(t, []int16{pgwire.FormatBinary16, pgwire.FormatBinary16, pgwire.FormatBinary16}, m.ColumnFormatCodes)
+		require.Equal(t, []int16{int16(pgwire.FmtBinary), int16(pgwire.FmtBinary), int16(pgwire.FmtBinary)}, m.ColumnFormatCodes)
 	})
 
 	t.Run("AppendBinary", func(t *testing.T) {

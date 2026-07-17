@@ -12,9 +12,9 @@ func TestAuthKerberosV5(t *testing.T) {
 	t.Parallel()
 
 	buf := pgio.NewBuffer(nil)
-	buf.AppendByte(pgwire.KindAuthentication)
+	buf.AppendByte(byte(pgwire.MsgAuthentication))
 	buf.AppendInt32(8)
-	buf.AppendInt32(pgwire.KindAuthKerberosV5)
+	buf.AppendInt32(int32(pgwire.AuthKerberosV5))
 
 	var m pgwire.AuthenticationKerberosV5
 

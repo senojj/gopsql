@@ -4,8 +4,6 @@ import (
 	"gopsql/pgio"
 )
 
-const KindAuthKerberosV5 int32 = 2
-
 var _ Message = &AuthenticationKerberosV5{}
 var _ Backend = &AuthenticationKerberosV5{}
 
@@ -21,20 +19,20 @@ func (x *AuthenticationKerberosV5) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindAuthentication)
+	buf.AppendByte(byte(MsgAuthentication))
 	buf.AppendInt32(int32(length))
-	buf.AppendInt32(KindAuthKerberosV5)
+	buf.AppendInt32(int32(AuthKerberosV5))
 	return buf.Bytes(), nil
 }
 
 func (x *AuthenticationKerberosV5) UnmarshalBinary(b []byte) error {
-	pgwireKind, b, err := ShiftHeader(b)
+	kind, b, err := ShiftHeader(b)
 	if err != nil {
 		return invalidFormat(err)
 	}
 
-	if pgwireKind != KindAuthentication {
-		return unexpectedKind(pgwireKind, KindAuthentication)
+	if kind != byte(MsgAuthentication) {
+		return unexpectedKind(kind, byte(MsgAuthentication))
 	}
 
 	authKind, b, err := pgio.ShiftInt32(b)
@@ -42,8 +40,8 @@ func (x *AuthenticationKerberosV5) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != KindAuthKerberosV5 {
-		return unexpectedAuthKind(authKind, KindAuthKerberosV5)
+	if authKind != int32(AuthKerberosV5) {
+		return unexpectedAuthKind(authKind, int32(AuthKerberosV5))
 	}
 
 	if len(b) > 0 {

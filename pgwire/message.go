@@ -7,58 +7,6 @@ import (
 	"gopsql/pgio"
 )
 
-const (
-	KindAuthentication byte = 'R'
-)
-
-const (
-	FieldSeverity         byte = 'S'
-	FieldSeverityRaw      byte = 'V'
-	FieldCode             byte = 'C'
-	FieldMessage          byte = 'M'
-	FieldDetail           byte = 'D'
-	FieldHint             byte = 'H'
-	FieldPosition         byte = 'P'
-	FieldInternalPosition byte = 'p'
-	FieldInternalQuery    byte = 'q'
-	FieldWhere            byte = 'W'
-	FieldSchema           byte = 's'
-	FieldTable            byte = 't'
-	FieldColumn           byte = 'c'
-	FieldDataType         byte = 'd'
-	FieldConstraint       byte = 'n'
-	FieldFile             byte = 'F'
-	FieldLine             byte = 'L'
-	FieldRoutine          byte = 'R'
-)
-
-const (
-	Statement byte = 'S'
-	Portal    byte = 'P'
-)
-
-const (
-	FormatText8   int8 = 0
-	FormatBinary8 int8 = 1
-)
-
-const (
-	FormatText16   int16 = int16(FormatText8)
-	FormatBinary16 int16 = int16(FormatBinary8)
-)
-
-const (
-	TxStatusIdle   byte = 'I'
-	TxStatusActive byte = 'T'
-	TxStatusError  byte = 'E'
-)
-
-const (
-	sizeMessageKind   = 1
-	sizeMessageLength = 4
-	sizeAuthKind      = 4
-)
-
 var (
 	NullByte = []byte{0}
 )

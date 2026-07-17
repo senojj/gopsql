@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindAuthSASLContinue int32 = 11
-
 var _ Message = &AuthenticationSASLContinue{}
 var _ Backend = &AuthenticationSASLContinue{}
 
@@ -31,21 +29,21 @@ func (x *AuthenticationSASLContinue) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindAuthentication)
+	buf.AppendByte(byte(MsgAuthentication))
 	buf.AppendInt32(int32(length))
-	buf.AppendInt32(KindAuthSASLContinue)
+	buf.AppendInt32(int32(AuthSASLContinue))
 	buf.AppendByte(x.Data...)
 	return buf.Bytes(), nil
 }
 
 func (x *AuthenticationSASLContinue) UnmarshalBinary(b []byte) error {
-	pgwireKind, b, err := ShiftHeader(b)
+	kind, b, err := ShiftHeader(b)
 	if err != nil {
 		return invalidFormat(err)
 	}
 
-	if pgwireKind != KindAuthentication {
-		return unexpectedKind(pgwireKind, KindAuthentication)
+	if kind != byte(MsgAuthentication) {
+		return unexpectedKind(kind, byte(MsgAuthentication))
 	}
 
 	authKind, b, err := pgio.ShiftInt32(b)
@@ -53,8 +51,8 @@ func (x *AuthenticationSASLContinue) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != KindAuthSASLContinue {
-		return unexpectedAuthKind(authKind, KindAuthSASLContinue)
+	if authKind != int32(AuthSASLContinue) {
+		return unexpectedAuthKind(authKind, int32(AuthSASLContinue))
 	}
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)

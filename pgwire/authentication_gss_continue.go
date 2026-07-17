@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindAuthGSSContinue int32 = 8
-
 var _ Message = &AuthenticationGSSContinue{}
 var _ Backend = &AuthenticationGSSContinue{}
 
@@ -30,21 +28,21 @@ func (x *AuthenticationGSSContinue) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindAuthentication)
+	buf.AppendByte(byte(MsgAuthentication))
 	buf.AppendInt32(int32(length))
-	buf.AppendInt32(KindAuthGSSContinue)
+	buf.AppendInt32(int32(AuthGSSContinue))
 	buf.AppendByte(x.Data...)
 	return buf.Bytes(), nil
 }
 
 func (x *AuthenticationGSSContinue) UnmarshalBinary(b []byte) error {
-	pgwireKind, b, err := ShiftHeader(b)
+	kind, b, err := ShiftHeader(b)
 	if err != nil {
 		return invalidFormat(err)
 	}
 
-	if pgwireKind != KindAuthentication {
-		return unexpectedKind(pgwireKind, KindAuthentication)
+	if kind != byte(MsgAuthentication) {
+		return unexpectedKind(kind, byte(MsgAuthentication))
 	}
 
 	authKind, b, err := pgio.ShiftInt32(b)
@@ -52,8 +50,8 @@ func (x *AuthenticationGSSContinue) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != KindAuthGSSContinue {
-		return unexpectedAuthKind(authKind, KindAuthGSSContinue)
+	if authKind != int32(AuthGSSContinue) {
+		return unexpectedAuthKind(authKind, int32(AuthGSSContinue))
 	}
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)

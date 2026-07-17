@@ -12,9 +12,9 @@ func TestAuthMD5Password(t *testing.T) {
 	t.Parallel()
 
 	buf := pgio.NewBuffer(nil)
-	buf.AppendByte(pgwire.KindAuthentication)
+	buf.AppendByte(byte(pgwire.MsgAuthentication))
 	buf.AppendInt32(12)
-	buf.AppendInt32(pgwire.KindAuthMD5Password)
+	buf.AppendInt32(int32(pgwire.AuthMD5Password))
 	buf.AppendByte([]byte("4321")...)
 
 	var m pgwire.AuthenticationMD5Password

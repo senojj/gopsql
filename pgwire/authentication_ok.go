@@ -4,8 +4,6 @@ import (
 	"gopsql/pgio"
 )
 
-const KindAuthOk int32 = 0
-
 var _ Message = &AuthenticationOk{}
 var _ Backend = &AuthenticationOk{}
 
@@ -21,20 +19,20 @@ func (x *AuthenticationOk) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindAuthentication)
+	buf.AppendByte(byte(MsgAuthentication))
 	buf.AppendInt32(int32(length))
-	buf.AppendInt32(KindAuthOk)
+	buf.AppendInt32(int32(AuthOk))
 	return buf.Bytes(), nil
 }
 
 func (x *AuthenticationOk) UnmarshalBinary(b []byte) error {
-	pgwireKind, b, err := ShiftHeader(b)
+	kind, b, err := ShiftHeader(b)
 	if err != nil {
 		return invalidFormat(err)
 	}
 
-	if pgwireKind != KindAuthentication {
-		return unexpectedKind(pgwireKind, KindAuthentication)
+	if kind != byte(MsgAuthentication) {
+		return unexpectedKind(kind, byte(MsgAuthentication))
 	}
 
 	authKind, b, err := pgio.ShiftInt32(b)
@@ -42,8 +40,8 @@ func (x *AuthenticationOk) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != KindAuthOk {
-		return unexpectedAuthKind(authKind, KindAuthOk)
+	if authKind != int32(AuthOk) {
+		return unexpectedAuthKind(authKind, int32(AuthOk))
 	}
 
 	if len(b) > 0 {

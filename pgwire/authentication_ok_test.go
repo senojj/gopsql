@@ -13,9 +13,9 @@ func TestAuthOk(t *testing.T) {
 	t.Parallel()
 
 	buf := pgio.NewBuffer(nil)
-	buf.AppendByte(pgwire.KindAuthentication)
+	buf.AppendByte(byte(pgwire.MsgAuthentication))
 	buf.AppendInt32(8)
-	buf.AppendInt32(pgwire.KindAuthOk)
+	buf.AppendInt32(int32(pgwire.AuthOk))
 
 	var m pgwire.AuthenticationOk
 

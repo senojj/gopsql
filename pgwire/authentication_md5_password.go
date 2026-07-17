@@ -4,8 +4,6 @@ import (
 	"gopsql/pgio"
 )
 
-const KindAuthMD5Password int32 = 5
-
 var _ Message = &AuthenticationMD5Password{}
 var _ Backend = &AuthenticationMD5Password{}
 
@@ -24,21 +22,21 @@ func (x *AuthenticationMD5Password) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindAuthentication)
+	buf.AppendByte(byte(MsgAuthentication))
 	buf.AppendInt32(int32(length))
-	buf.AppendInt32(KindAuthMD5Password)
+	buf.AppendInt32(int32(AuthMD5Password))
 	buf.AppendByte(x.Salt[:]...)
 	return buf.Bytes(), nil
 }
 
 func (x *AuthenticationMD5Password) UnmarshalBinary(b []byte) error {
-	pgwireKind, b, err := ShiftHeader(b)
+	kind, b, err := ShiftHeader(b)
 	if err != nil {
 		return invalidFormat(err)
 	}
 
-	if pgwireKind != KindAuthentication {
-		return unexpectedKind(pgwireKind, KindAuthentication)
+	if kind != byte(MsgAuthentication) {
+		return unexpectedKind(kind, byte(MsgAuthentication))
 	}
 
 	authKind, b, err := pgio.ShiftInt32(b)
@@ -46,8 +44,8 @@ func (x *AuthenticationMD5Password) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != KindAuthMD5Password {
-		return unexpectedAuthKind(authKind, KindAuthMD5Password)
+	if authKind != int32(AuthMD5Password) {
+		return unexpectedAuthKind(authKind, int32(AuthMD5Password))
 	}
 	copy(x.Salt[:], b)
 	return nil

@@ -12,9 +12,9 @@ func TestAuthSASLFinal(t *testing.T) {
 	t.Parallel()
 
 	buf := pgio.NewBuffer(nil)
-	buf.AppendByte(pgwire.KindAuthentication)
+	buf.AppendByte(byte(pgwire.MsgAuthentication))
 	buf.AppendInt32(19)
-	buf.AppendInt32(pgwire.KindAuthSASLFinal)
+	buf.AppendInt32(int32(pgwire.AuthSASLFinal))
 	buf.AppendByte([]byte("hello world")...)
 
 	var m pgwire.AuthenticationSASLFinal
