@@ -4,8 +4,6 @@ import (
 	"gopsql/pgio"
 )
 
-const KindReadyForQuery byte = 'Z'
-
 var _ Message = &ReadyForQuery{}
 var _ Backend = &ReadyForQuery{}
 
@@ -25,20 +23,16 @@ func (x *ReadyForQuery) AppendBinary(b []byte) ([]byte, error) {
 	buf := pgio.NewBuffer(b)
 
 	buf.Grow(size)
-	buf.AppendByte(KindReadyForQuery)
+	buf.AppendByte(byte(MsgReadyForQuery))
 	buf.AppendInt32(int32(length))
 	buf.AppendByte(x.TxStatus)
 	return buf.Bytes(), nil
 }
 
 func (x *ReadyForQuery) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgReadyForQuery, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindReadyForQuery {
-		return unexpectedKind(kind, KindReadyForQuery)
 	}
 
 	status, b, err := pgio.ShiftByte(b)

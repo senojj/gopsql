@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindBind byte = 'B'
-
 var _ Message = &Bind{}
 var _ Frontend = &Bind{}
 
@@ -80,7 +78,7 @@ func (x *Bind) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindBind)
+	buf.AppendByte(byte(MsgBind))
 	buf.AppendInt32(int32(length))
 	buf.AppendString(x.DestinationName)
 	buf.AppendString(x.SourceName)
@@ -100,13 +98,9 @@ func (x *Bind) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *Bind) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgBind, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindBind {
-		return unexpectedKind(kind, KindBind)
 	}
 
 	buf := pgio.NewBuffer(b)

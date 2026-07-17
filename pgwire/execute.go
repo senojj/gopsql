@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindExecute byte = 'E'
-
 var _ Message = &Execute{}
 var _ Frontend = &Execute{}
 
@@ -34,7 +32,7 @@ func (x *Execute) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindExecute)
+	buf.AppendByte(byte(MsgExecute))
 	buf.AppendInt32(int32(length))
 	buf.AppendString(x.Portal)
 	buf.AppendInt32(x.RowLimit)
@@ -42,13 +40,9 @@ func (x *Execute) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *Execute) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgExecute, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindExecute {
-		return unexpectedKind(kind, KindExecute)
 	}
 
 	buf := pgio.NewBuffer(b)

@@ -2,8 +2,6 @@ package pgwire
 
 import "gopsql/pgio"
 
-const KindPortalSuspended byte = 's'
-
 var _ Message = &PortalSuspended{}
 var _ Backend = &PortalSuspended{}
 
@@ -20,19 +18,15 @@ func (x *PortalSuspended) AppendBinary(b []byte) ([]byte, error) {
 	buf := pgio.NewBuffer(b)
 
 	buf.Grow(size)
-	buf.AppendByte(KindPortalSuspended)
+	buf.AppendByte(byte(MsgPortalSuspend))
 	buf.AppendInt32(int32(length))
 	return buf.Bytes(), nil
 }
 
 func (x *PortalSuspended) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgPortalSuspend, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindPortalSuspended {
-		return unexpectedKind(kind, KindPortalSuspended)
 	}
 
 	if len(b) > 0 {

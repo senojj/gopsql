@@ -2,8 +2,6 @@ package pgwire
 
 import "gopsql/pgio"
 
-const KindParseComplete byte = '1'
-
 var _ Message = &ParseComplete{}
 var _ Backend = &ParseComplete{}
 
@@ -20,19 +18,15 @@ func (x *ParseComplete) AppendBinary(b []byte) ([]byte, error) {
 	buf := pgio.NewBuffer(b)
 
 	buf.Grow(size)
-	buf.AppendByte(KindParseComplete)
+	buf.AppendByte(byte(MsgParseComplete))
 	buf.AppendInt32(int32(length))
 	return buf.Bytes(), nil
 }
 
 func (x *ParseComplete) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgParseComplete, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindParseComplete {
-		return unexpectedKind(kind, KindParseComplete)
 	}
 
 	if len(b) > 0 {

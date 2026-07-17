@@ -4,8 +4,6 @@ import (
 	"gopsql/pgio"
 )
 
-const KindCopyDone byte = 'c'
-
 var _ Message = &CopyDone{}
 var _ Frontend = &CopyDone{}
 var _ Backend = &CopyDone{}
@@ -24,19 +22,15 @@ func (x *CopyDone) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindCopyDone)
+	buf.AppendByte(byte(MsgCopyDone))
 	buf.AppendInt32(int32(length))
 	return buf.Bytes(), nil
 }
 
 func (x *CopyDone) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgCopyDone, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindCopyDone {
-		return unexpectedKind(kind, KindCopyDone)
 	}
 
 	if len(b) > 0 {

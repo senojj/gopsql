@@ -30,13 +30,9 @@ func (x *AuthenticationMD5Password) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *AuthenticationMD5Password) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgAuthentication, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != byte(MsgAuthentication) {
-		return unexpectedKind(kind, byte(MsgAuthentication))
 	}
 
 	authKind, b, err := pgio.ShiftInt32(b)
@@ -44,8 +40,8 @@ func (x *AuthenticationMD5Password) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != int32(AuthMD5Password) {
-		return unexpectedAuthKind(authKind, int32(AuthMD5Password))
+	if !AuthMD5Password.Is(authKind) {
+		return unexpectedAuthKind(authKind, AuthMD5Password)
 	}
 	copy(x.Salt[:], b)
 	return nil

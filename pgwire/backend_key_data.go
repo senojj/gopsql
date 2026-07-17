@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindBackendKeyData byte = 'K'
-
 var _ Message = &BackendKeyData{}
 var _ Backend = &BackendKeyData{}
 
@@ -41,7 +39,7 @@ func (x *BackendKeyData) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindBackendKeyData)
+	buf.AppendByte(byte(MsgBackendKeyData))
 	buf.AppendInt32(int32(length))
 	buf.AppendInt32(x.ProcessID)
 	buf.AppendByte(x.SecretKey...)
@@ -49,13 +47,9 @@ func (x *BackendKeyData) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *BackendKeyData) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgBackendKeyData, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindBackendKeyData {
-		return unexpectedKind(kind, KindBackendKeyData)
 	}
 
 	buf := pgio.NewBuffer(b)

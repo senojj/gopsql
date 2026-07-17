@@ -12,7 +12,7 @@ func TestCloseComplete(t *testing.T) {
 	t.Parallel()
 
 	buf := pgio.NewBuffer(nil)
-	buf.AppendByte(pgwire.KindCloseComplete)
+	buf.AppendByte(byte(pgwire.MsgCloseComplete))
 	buf.AppendInt32(4)
 
 	var m pgwire.CloseComplete

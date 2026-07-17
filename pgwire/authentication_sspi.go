@@ -26,13 +26,9 @@ func (x *AuthenticationSSPI) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *AuthenticationSSPI) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgAuthentication, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != byte(MsgAuthentication) {
-		return unexpectedKind(kind, byte(MsgAuthentication))
 	}
 
 	authKind, b, err := pgio.ShiftInt32(b)
@@ -40,8 +36,8 @@ func (x *AuthenticationSSPI) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != int32(AuthSSPI) {
-		return unexpectedAuthKind(authKind, int32(AuthSSPI))
+	if !AuthSSPI.Is(authKind) {
+		return unexpectedAuthKind(authKind, AuthSSPI)
 	}
 
 	if len(b) > 0 {

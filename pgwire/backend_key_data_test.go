@@ -12,7 +12,7 @@ func TestBackendKeyData(t *testing.T) {
 	t.Parallel()
 
 	buf := pgio.NewBuffer(nil)
-	buf.AppendByte(pgwire.KindBackendKeyData)
+	buf.AppendByte(byte(pgwire.MsgBackendKeyData))
 	buf.AppendInt32(19)
 	buf.AppendInt32(4321)
 	buf.AppendByte([]byte("hello world")...)

@@ -26,13 +26,9 @@ func (x *AuthenticationOk) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *AuthenticationOk) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgAuthentication, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != byte(MsgAuthentication) {
-		return unexpectedKind(kind, byte(MsgAuthentication))
 	}
 
 	authKind, b, err := pgio.ShiftInt32(b)
@@ -40,8 +36,8 @@ func (x *AuthenticationOk) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != int32(AuthOk) {
-		return unexpectedAuthKind(authKind, int32(AuthOk))
+	if !AuthOk.Is(authKind) {
+		return unexpectedAuthKind(authKind, AuthOk)
 	}
 
 	if len(b) > 0 {

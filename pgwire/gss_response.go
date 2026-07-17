@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindGSSResponse byte = 'p'
-
 var _ Message = &GSSResponse{}
 var _ Frontend = &GSSResponse{}
 
@@ -28,20 +26,16 @@ func (x *GSSResponse) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindGSSResponse)
+	buf.AppendByte(byte(MsgGSSResponse))
 	buf.AppendInt32(int32(length))
 	buf.AppendByte(x.Data...)
 	return buf.Bytes(), nil
 }
 
 func (x *GSSResponse) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgGSSResponse, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindGSSResponse {
-		return unexpectedKind(kind, KindGSSResponse)
 	}
 
 	x.Data = make([]byte, len(b))

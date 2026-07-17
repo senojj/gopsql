@@ -12,7 +12,7 @@ func TestBindComplete(t *testing.T) {
 	t.Parallel()
 
 	buf := pgio.NewBuffer(nil)
-	buf.AppendByte(pgwire.KindBindComplete)
+	buf.AppendByte(byte(pgwire.MsgBindComplete))
 	buf.AppendInt32(4)
 
 	var m pgwire.BindComplete

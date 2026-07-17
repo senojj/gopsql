@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindNegotiateProtocolVersion byte = 'v'
-
 var _ Message = &NegotiateProtocolVersion{}
 var _ Backend = &NegotiateProtocolVersion{}
 
@@ -45,7 +43,7 @@ func (x *NegotiateProtocolVersion) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindNegotiateProtocolVersion)
+	buf.AppendByte(byte(MsgNegotiateProtocolVersion))
 	buf.AppendInt32(int32(length))
 	buf.AppendInt32(x.MinorVersionSupported)
 	buf.AppendInt32(int32(countUnrecognizedOptions))
@@ -54,13 +52,9 @@ func (x *NegotiateProtocolVersion) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *NegotiateProtocolVersion) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgNegotiateProtocolVersion, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindNegotiateProtocolVersion {
-		return unexpectedKind(kind, KindNegotiateProtocolVersion)
 	}
 
 	buf := pgio.NewBuffer(b)

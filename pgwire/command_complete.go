@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindCommandComplete byte = 'C'
-
 var _ Message = &CommandComplete{}
 var _ Backend = &CommandComplete{}
 
@@ -30,20 +28,16 @@ func (x *CommandComplete) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindCommandComplete)
+	buf.AppendByte(byte(MsgCommandComplete))
 	buf.AppendInt32(int32(length))
 	buf.AppendString(x.Tag)
 	return buf.Bytes(), nil
 }
 
 func (x *CommandComplete) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgCommandComplete, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindCommandComplete {
-		return unexpectedKind(kind, KindCommandComplete)
 	}
 
 	buf := pgio.NewBuffer(b)

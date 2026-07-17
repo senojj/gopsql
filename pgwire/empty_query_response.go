@@ -4,8 +4,6 @@ import (
 	"gopsql/pgio"
 )
 
-const KindEmptyQueryResponse byte = 'I'
-
 var _ Message = &EmptyQueryResponse{}
 var _ Backend = &EmptyQueryResponse{}
 
@@ -21,19 +19,15 @@ func (x *EmptyQueryResponse) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindEmptyQueryResponse)
+	buf.AppendByte(byte(MsgEmptyQueryResponse))
 	buf.AppendInt32(int32(length))
 	return buf.Bytes(), nil
 }
 
 func (x *EmptyQueryResponse) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgEmptyQueryResponse, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindEmptyQueryResponse {
-		return unexpectedKind(kind, KindEmptyQueryResponse)
 	}
 
 	if len(b) > 0 {

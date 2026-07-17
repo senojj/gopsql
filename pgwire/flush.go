@@ -4,8 +4,6 @@ import (
 	"gopsql/pgio"
 )
 
-const KindFlush byte = 'H'
-
 var _ Message = &Flush{}
 var _ Frontend = &Flush{}
 
@@ -21,19 +19,15 @@ func (x *Flush) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindFlush)
+	buf.AppendByte(byte(MsgFlush))
 	buf.AppendInt32(int32(length))
 	return buf.Bytes(), nil
 }
 
 func (x *Flush) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgFlush, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindFlush {
-		return unexpectedKind(kind, KindFlush)
 	}
 
 	if len(b) > 0 {

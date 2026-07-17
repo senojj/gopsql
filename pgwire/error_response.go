@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindErrorResponse byte = 'E'
-
 var _ Message = &ErrorResponse{}
 var _ Backend = &ErrorResponse{}
 
@@ -44,7 +42,7 @@ func (x *ErrorResponse) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindErrorResponse)
+	buf.AppendByte(byte(MsgErrorResponse))
 	buf.AppendInt32(int32(length))
 
 	for i := range countFields {
@@ -56,13 +54,9 @@ func (x *ErrorResponse) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *ErrorResponse) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgErrorResponse, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindErrorResponse {
-		return unexpectedKind(kind, KindErrorResponse)
 	}
 
 	buf := pgio.NewBuffer(b)

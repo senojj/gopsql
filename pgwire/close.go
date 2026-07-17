@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindClose byte = 'C'
-
 var _ Message = &Close{}
 var _ Frontend = &Close{}
 
@@ -34,7 +32,7 @@ func (x *Close) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindClose)
+	buf.AppendByte(byte(MsgClose))
 	buf.AppendInt32(int32(length))
 	buf.AppendByte(x.Kind)
 	buf.AppendString(x.Name)
@@ -42,13 +40,9 @@ func (x *Close) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *Close) UnmarshalBinary(b []byte) error {
-	pgwireKind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgClose, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if pgwireKind != KindClose {
-		return unexpectedKind(pgwireKind, KindClose)
 	}
 
 	buf := pgio.NewBuffer(b)

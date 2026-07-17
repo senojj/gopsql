@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindSASLInitialResponse byte = 'p'
-
 var _ Message = &SASLInitialResponse{}
 var _ Frontend = &SASLInitialResponse{}
 
@@ -43,7 +41,7 @@ func (x *SASLInitialResponse) AppendBinary(b []byte) ([]byte, error) {
 	buf := pgio.NewBuffer(b)
 
 	buf.Grow(size)
-	buf.AppendByte(KindSASLInitialResponse)
+	buf.AppendByte(byte(MsgSASLInitialResponse))
 	buf.AppendInt32(int32(length))
 	buf.AppendString(x.Name)
 	buf.AppendInt32(int32(sizeResponse))
@@ -52,13 +50,9 @@ func (x *SASLInitialResponse) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *SASLInitialResponse) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgSASLInitialResponse, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindSASLInitialResponse {
-		return unexpectedKind(kind, KindSASLInitialResponse)
 	}
 
 	buf := pgio.NewBuffer(b)

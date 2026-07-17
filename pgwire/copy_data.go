@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindCopyData byte = 'd'
-
 var _ Message = &CopyData{}
 var _ Frontend = &CopyData{}
 var _ Backend = &CopyData{}
@@ -33,20 +31,16 @@ func (x *CopyData) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindCopyData)
+	buf.AppendByte(byte(MsgCopyData))
 	buf.AppendInt32(int32(length))
 	buf.AppendByte(x.Data...)
 	return buf.Bytes(), nil
 }
 
 func (x *CopyData) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgCopyData, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindCopyData {
-		return unexpectedKind(kind, KindCopyData)
 	}
 
 	x.Data = make([]byte, len(b))

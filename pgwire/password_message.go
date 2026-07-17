@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindPasswordMessage byte = 'p'
-
 var _ Message = &PasswordMessage{}
 var _ Frontend = &PasswordMessage{}
 
@@ -32,20 +30,16 @@ func (x *PasswordMessage) AppendBinary(b []byte) ([]byte, error) {
 	buf := pgio.NewBuffer(b)
 
 	buf.Grow(size)
-	buf.AppendByte(KindPasswordMessage)
+	buf.AppendByte(byte(MsgPasswordMessage))
 	buf.AppendInt32(int32(length))
 	buf.AppendString(x.Password)
 	return buf.Bytes(), nil
 }
 
 func (x *PasswordMessage) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgPasswordMessage, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindPasswordMessage {
-		return unexpectedKind(kind, KindPasswordMessage)
 	}
 
 	password, b, err := pgio.ShiftString(b)

@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindDataRow byte = 'D'
-
 var _ Message = &DataRow{}
 var _ Backend = &DataRow{}
 
@@ -54,7 +52,7 @@ func (x *DataRow) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindDataRow)
+	buf.AppendByte(byte(MsgDataRow))
 	buf.AppendInt32(int32(length))
 	buf.AppendInt16(int16(countCols))
 
@@ -72,13 +70,9 @@ func (x *DataRow) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *DataRow) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgDataRow, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind == KindDataRow {
-		return unexpectedKind(kind, KindDataRow)
 	}
 
 	buf := pgio.NewBuffer(b)

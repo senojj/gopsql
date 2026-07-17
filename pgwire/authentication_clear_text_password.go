@@ -26,13 +26,9 @@ func (x *AuthenticationCleartextPassword) AppendBinary(b []byte) ([]byte, error)
 }
 
 func (x *AuthenticationCleartextPassword) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgAuthentication, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != byte(MsgAuthentication) {
-		return unexpectedKind(kind, byte(MsgAuthentication))
 	}
 
 	authKind, b, err := pgio.ShiftInt32(b)
@@ -40,8 +36,8 @@ func (x *AuthenticationCleartextPassword) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != int32(AuthClearTextPassword) {
-		return unexpectedAuthKind(authKind, int32(AuthClearTextPassword))
+	if !AuthClearTextPassword.Is(authKind) {
+		return unexpectedAuthKind(authKind, AuthClearTextPassword)
 	}
 
 	if len(b) > 0 {

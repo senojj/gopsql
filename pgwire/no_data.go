@@ -4,8 +4,6 @@ import (
 	"gopsql/pgio"
 )
 
-const KindNoData byte = 'n'
-
 var _ Message = &NoData{}
 var _ Backend = &NoData{}
 
@@ -21,19 +19,15 @@ func (x *NoData) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindNoData)
+	buf.AppendByte(byte(MsgNoData))
 	buf.AppendInt32(length)
 	return buf.Bytes(), nil
 }
 
 func (x *NoData) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgNoData, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindNoData {
-		return unexpectedKind(kind, KindNoData)
 	}
 
 	if len(b) > 0 {

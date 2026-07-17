@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindFunctionCall byte = 'F'
-
 var _ Message = &FunctionCall{}
 var _ Frontend = &FunctionCall{}
 
@@ -75,7 +73,7 @@ func (x *FunctionCall) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindFunctionCall)
+	buf.AppendByte(byte(MsgFunctionCall))
 	buf.AppendInt32(int32(length))
 	buf.AppendInt32(x.ObjectID)
 	buf.AppendInt16(int16(countFormats))
@@ -93,13 +91,9 @@ func (x *FunctionCall) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *FunctionCall) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgFunctionCall, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindFunctionCall {
-		return unexpectedKind(kind, KindFunctionCall)
 	}
 
 	buf := pgio.NewBuffer(b)

@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindParse byte = 'P'
-
 var _ Message = &Parse{}
 var _ Frontend = &Parse{}
 
@@ -48,7 +46,7 @@ func (x *Parse) AppendBinary(b []byte) ([]byte, error) {
 	buf := pgio.NewBuffer(b)
 
 	buf.Grow(size)
-	buf.AppendByte(KindParse)
+	buf.AppendByte(byte(MsgParse))
 	buf.AppendInt32(int32(length))
 	buf.AppendString(x.DestinationStatementName)
 	buf.AppendString(x.Query)
@@ -61,13 +59,9 @@ func (x *Parse) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *Parse) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgParse, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindParse {
-		return unexpectedKind(kind, KindParse)
 	}
 
 	buf := pgio.NewBuffer(b)

@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindFunctionCallResponse byte = 'V'
-
 var _ Message = &FunctionCallResponse{}
 var _ Backend = &FunctionCallResponse{}
 
@@ -35,7 +33,7 @@ func (x *FunctionCallResponse) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindFunctionCallResponse)
+	buf.AppendByte(byte(MsgFunctionCallResponse))
 	buf.AppendInt32(int32(length))
 
 	if x.Result == nil {
@@ -48,13 +46,9 @@ func (x *FunctionCallResponse) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *FunctionCallResponse) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgFunctionCallResponse, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindFunctionCallResponse {
-		return unexpectedKind(kind, KindFunctionCallResponse)
 	}
 
 	length, b, err := pgio.ShiftInt32(b)

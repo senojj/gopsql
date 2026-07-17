@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindCopyBothResponse byte = 'W'
-
 var _ Message = &CopyBothResponse{}
 var _ Backend = &CopyBothResponse{}
 
@@ -45,7 +43,7 @@ func (x *CopyBothResponse) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindCopyBothResponse)
+	buf.AppendByte(byte(MsgCopyBothResponse))
 	buf.AppendInt32(int32(length))
 	buf.AppendInt8(x.Format)
 	buf.AppendInt16(int16(countCols))
@@ -54,13 +52,9 @@ func (x *CopyBothResponse) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *CopyBothResponse) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgCopyBothResponse, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindCopyBothResponse {
-		return unexpectedKind(kind, KindCopyBothResponse)
 	}
 
 	buf := pgio.NewBuffer(b)

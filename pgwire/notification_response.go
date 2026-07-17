@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindNotificationResponse byte = 'A'
-
 var _ Message = &NotificationResponse{}
 var _ Backend = &NotificationResponse{}
 
@@ -39,7 +37,7 @@ func (x *NotificationResponse) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindNotificationResponse)
+	buf.AppendByte(byte(MsgNotificationResponse))
 	buf.AppendInt32(int32(length))
 	buf.AppendString(x.Channel)
 	buf.AppendString(x.Payload)
@@ -47,13 +45,9 @@ func (x *NotificationResponse) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *NotificationResponse) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgNotificationResponse, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindNotificationResponse {
-		return unexpectedKind(kind, KindNotificationResponse)
 	}
 
 	buf := pgio.NewBuffer(b)

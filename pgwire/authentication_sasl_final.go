@@ -37,13 +37,9 @@ func (x *AuthenticationSASLFinal) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *AuthenticationSASLFinal) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgAuthentication, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != byte(MsgAuthentication) {
-		return unexpectedKind(kind, byte(MsgAuthentication))
 	}
 
 	authKind, b, err := pgio.ShiftInt32(b)
@@ -51,8 +47,8 @@ func (x *AuthenticationSASLFinal) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != int32(AuthSASLFinal) {
-		return unexpectedAuthKind(authKind, int32(AuthSASLFinal))
+	if !AuthSASLFinal.Is(authKind) {
+		return unexpectedAuthKind(authKind, AuthSASLFinal)
 	}
 	x.Data = make([]byte, len(b))
 	copy(x.Data, b)

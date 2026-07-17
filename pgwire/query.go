@@ -2,8 +2,6 @@ package pgwire
 
 import "gopsql/pgio"
 
-const KindQuery byte = 'Q'
-
 var _ Message = &Query{}
 var _ Frontend = &Query{}
 
@@ -25,20 +23,16 @@ func (x *Query) AppendBinary(b []byte) ([]byte, error) {
 	buf := pgio.NewBuffer(b)
 
 	buf.Grow(size)
-	buf.AppendByte(KindQuery)
+	buf.AppendByte(byte(MsgQuery))
 	buf.AppendInt32(int32(length))
 	buf.AppendString(x.Value)
 	return buf.Bytes(), nil
 }
 
 func (x *Query) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgQuery, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindQuery {
-		return unexpectedKind(kind, KindQuery)
 	}
 
 	query, b, err := pgio.ShiftString(b)

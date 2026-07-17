@@ -26,13 +26,9 @@ func (x *AuthenticationKerberosV5) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *AuthenticationKerberosV5) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgAuthentication, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != byte(MsgAuthentication) {
-		return unexpectedKind(kind, byte(MsgAuthentication))
 	}
 
 	authKind, b, err := pgio.ShiftInt32(b)
@@ -40,8 +36,8 @@ func (x *AuthenticationKerberosV5) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	if authKind != int32(AuthKerberosV5) {
-		return unexpectedAuthKind(authKind, int32(AuthKerberosV5))
+	if !AuthKerberosV5.Is(authKind) {
+		return unexpectedAuthKind(authKind, AuthKerberosV5)
 	}
 
 	if len(b) > 0 {

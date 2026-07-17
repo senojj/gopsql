@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindDescribe byte = 'D'
-
 var _ Message = &Describe{}
 var _ Frontend = &Describe{}
 
@@ -34,7 +32,7 @@ func (x *Describe) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindDescribe)
+	buf.AppendByte(byte(MsgDescribe))
 	buf.AppendInt32(int32(length))
 	buf.AppendByte(x.Kind)
 	buf.AppendString(x.Name)
@@ -42,13 +40,9 @@ func (x *Describe) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *Describe) UnmarshalBinary(b []byte) error {
-	pgwireKind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgDescribe, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if pgwireKind != KindDescribe {
-		return unexpectedKind(pgwireKind, KindDescribe)
 	}
 
 	buf := pgio.NewBuffer(b)

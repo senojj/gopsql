@@ -4,8 +4,6 @@ import (
 	"gopsql/pgio"
 )
 
-const KindBindComplete byte = '2'
-
 var _ Message = &BindComplete{}
 var _ Backend = &BindComplete{}
 
@@ -21,19 +19,15 @@ func (x *BindComplete) AppendBinary(b []byte) ([]byte, error) {
 
 	buf := pgio.NewBuffer(b)
 	buf.Grow(size)
-	buf.AppendByte(KindBindComplete)
+	buf.AppendByte(byte(MsgBindComplete))
 	buf.AppendInt32(int32(length))
 	return buf.Bytes(), nil
 }
 
 func (x *BindComplete) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgBindComplete, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindBindComplete {
-		return unexpectedKind(kind, KindBindComplete)
 	}
 
 	if len(b) > 0 {

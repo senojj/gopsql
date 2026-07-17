@@ -2,6 +2,10 @@ package pgwire
 
 type MessageKind byte
 
+func (x MessageKind) Is(b byte) bool {
+	return x == MessageKind(b)
+}
+
 // Backend messages
 const (
 	MsgAuthentication           MessageKind = 'R'
@@ -54,6 +58,10 @@ const (
 )
 
 type AuthenticationKind int32
+
+func (x AuthenticationKind) Is(i int32) bool {
+	return x == AuthenticationKind(i)
+}
 
 const (
 	AuthOk                AuthenticationKind = 0

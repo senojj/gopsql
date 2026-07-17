@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const KindParameterStatus byte = 'S'
-
 var _ Message = &ParameterStatus{}
 var _ Backend = &ParameterStatus{}
 
@@ -36,7 +34,7 @@ func (x *ParameterStatus) AppendBinary(b []byte) ([]byte, error) {
 	buf := pgio.NewBuffer(b)
 
 	buf.Grow(size)
-	buf.AppendByte(KindParameterStatus)
+	buf.AppendByte(byte(MsgParameterStatus))
 	buf.AppendInt32(int32(length))
 	buf.AppendString(x.Name)
 	buf.AppendString(x.Value)
@@ -44,13 +42,9 @@ func (x *ParameterStatus) AppendBinary(b []byte) ([]byte, error) {
 }
 
 func (x *ParameterStatus) UnmarshalBinary(b []byte) error {
-	kind, b, err := ShiftHeader(b)
+	b, err := ShiftHeader(MsgParameterStatus, b)
 	if err != nil {
 		return invalidFormat(err)
-	}
-
-	if kind != KindParameterStatus {
-		return unexpectedKind(kind, KindParameterStatus)
 	}
 
 	buf := pgio.NewBuffer(b)
