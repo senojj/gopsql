@@ -478,7 +478,7 @@ func (x *MsgDataRow) AppendBinary(b []byte) ([]byte, error) {
 		buf.AppendInt32(int32(lengthCol))
 		buf.AppendByte(column...)
 	}
-	return b, nil
+	return buf.Bytes(), nil
 }
 
 func (x *MsgDataRow) UnmarshalBinary(b []byte) error {
