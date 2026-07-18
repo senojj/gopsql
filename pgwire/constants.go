@@ -1,5 +1,30 @@
 package pgwire
 
+const (
+	cancelHigh        int32 = 1234
+	cancelLow         int32 = 5678
+	CodeCancelRequest int32 = cancelLow | cancelHigh<<16
+)
+
+const (
+	sslHigh        int32 = 1234
+	sslLow         int32 = 5679
+	CodeSSLRequest int32 = sslLow | sslHigh<<16
+)
+
+const (
+	major3             int32 = 3
+	minor2             int32 = 2
+	ProtocolVersion3_2 int32 = minor2 | major3<<16
+)
+
+const (
+	ParamUser        string = "user"
+	ParamDatabase    string = "database"
+	ParamOptions     string = "options"
+	ParamReplication string = "replication"
+)
+
 type MessageKind byte
 
 func (x MessageKind) Is(b byte) bool {
@@ -8,53 +33,53 @@ func (x MessageKind) Is(b byte) bool {
 
 // Backend messages
 const (
-	MsgAuthentication           MessageKind = 'R'
-	MsgBackendKeyData           MessageKind = 'K'
-	MsgBindComplete             MessageKind = '2'
-	MsgCloseComplete            MessageKind = '3'
-	MsgCommandComplete          MessageKind = 'C'
-	MsgCopyInResponse           MessageKind = 'G'
-	MsgCopyOutResponse          MessageKind = 'H'
-	MsgCopyBothResponse         MessageKind = 'W'
-	MsgDataRow                  MessageKind = 'D'
-	MsgEmptyQueryResponse       MessageKind = 'I'
-	MsgErrorResponse            MessageKind = 'E'
-	MsgFunctionCallResponse     MessageKind = 'V'
-	MsgNegotiateProtocolVersion MessageKind = 'v'
-	MsgNoData                   MessageKind = 'n'
-	MsgNoticeResponse           MessageKind = 'N'
-	MsgNotificationResponse     MessageKind = 'A'
-	MsgParameterDescription     MessageKind = 't'
-	MsgParameterStatus          MessageKind = 'S'
-	MsgParseComplete            MessageKind = '1'
-	MsgPortalSuspend            MessageKind = 's'
-	MsgReadyForQuery            MessageKind = 'Z'
-	MsgRowDescription           MessageKind = 'T'
+	MessageKindAuthentication           MessageKind = 'R'
+	MessageKindBackendKeyData           MessageKind = 'K'
+	MessageKindBindComplete             MessageKind = '2'
+	MessageKindCloseComplete            MessageKind = '3'
+	MessageKindCommandComplete          MessageKind = 'C'
+	MessageKindCopyInResponse           MessageKind = 'G'
+	MessageKindCopyOutResponse          MessageKind = 'H'
+	MessageKindCopyBothResponse         MessageKind = 'W'
+	MessageKindDataRow                  MessageKind = 'D'
+	MessageKindEmptyQueryResponse       MessageKind = 'I'
+	MessageKindErrorResponse            MessageKind = 'E'
+	MessageKindFunctionCallResponse     MessageKind = 'V'
+	MessageKindNegotiateProtocolVersion MessageKind = 'v'
+	MessageKindNoData                   MessageKind = 'n'
+	MessageKindNoticeResponse           MessageKind = 'N'
+	MessageKindNotificationResponse     MessageKind = 'A'
+	MessageKindParameterDescription     MessageKind = 't'
+	MessageKindParameterStatus          MessageKind = 'S'
+	MessageKindParseComplete            MessageKind = '1'
+	MessageKindPortalSuspend            MessageKind = 's'
+	MessageKindReadyForQuery            MessageKind = 'Z'
+	MessageKindRowDescription           MessageKind = 'T'
 )
 
 // Frontend messages
 const (
-	MsgBind                MessageKind = 'B'
-	MsgClose               MessageKind = 'C'
-	MsgCopyFail            MessageKind = 'f'
-	MsgDescribe            MessageKind = 'D'
-	MsgExecute             MessageKind = 'E'
-	MsgFlush               MessageKind = 'H'
-	MsgFunctionCall        MessageKind = 'F'
-	MsgGSSResponse         MessageKind = 'p'
-	MsgParse               MessageKind = 'P'
-	MsgPasswordMessage     MessageKind = 'p'
-	MsgQuery               MessageKind = 'Q'
-	MsgSASLInitialResponse MessageKind = 'p'
-	MsgSASLResponse        MessageKind = 'p'
-	MsgSync                MessageKind = 'S'
-	MsgTerminate           MessageKind = 'X'
+	MessageKindBind                MessageKind = 'B'
+	MessageKindClose               MessageKind = 'C'
+	MessageKindCopyFail            MessageKind = 'f'
+	MessageKindDescribe            MessageKind = 'D'
+	MessageKindExecute             MessageKind = 'E'
+	MessageKindFlush               MessageKind = 'H'
+	MessageKindFunctionCall        MessageKind = 'F'
+	MessageKindGSSResponse         MessageKind = 'p'
+	MessageKindParse               MessageKind = 'P'
+	MessageKindPasswordMessage     MessageKind = 'p'
+	MessageKindQuery               MessageKind = 'Q'
+	MessageKindSASLInitialResponse MessageKind = 'p'
+	MessageKindSASLResponse        MessageKind = 'p'
+	MessageKindSync                MessageKind = 'S'
+	MessageKindTerminate           MessageKind = 'X'
 )
 
 // Backend + Frontend messages
 const (
-	MsgCopyData MessageKind = 'd'
-	MsgCopyDone MessageKind = 'c'
+	MessageKindCopyData MessageKind = 'd'
+	MessageKindCopyDone MessageKind = 'c'
 )
 
 type AuthenticationKind int32
@@ -64,61 +89,61 @@ func (x AuthenticationKind) Is(i int32) bool {
 }
 
 const (
-	AuthOk                AuthenticationKind = 0
-	AuthKerberosV5        AuthenticationKind = 2
-	AuthClearTextPassword AuthenticationKind = 3
-	AuthMD5Password       AuthenticationKind = 5
-	AuthGSS               AuthenticationKind = 7
-	AuthGSSContinue       AuthenticationKind = 8
-	AuthSSPI              AuthenticationKind = 9
-	AuthSASL              AuthenticationKind = 10
-	AuthSASLContinue      AuthenticationKind = 11
-	AuthSASLFinal         AuthenticationKind = 12
+	AuthenticationKindOk                AuthenticationKind = 0
+	AuthenticationKindKerberosV5        AuthenticationKind = 2
+	AuthenticationKindClearTextPassword AuthenticationKind = 3
+	AuthenticationKindMD5Password       AuthenticationKind = 5
+	AuthenticationKindGSS               AuthenticationKind = 7
+	AuthenticationKindGSSContinue       AuthenticationKind = 8
+	AuthenticationKindSSPI              AuthenticationKind = 9
+	AuthenticationKindSASL              AuthenticationKind = 10
+	AuthenticationKindSASLContinue      AuthenticationKind = 11
+	AuthenticationKindSASLFinal         AuthenticationKind = 12
 )
 
 type FieldKind byte
 
 const (
-	FldSeverity         FieldKind = 'S'
-	FldSeverityRaw      FieldKind = 'V'
-	FldCode             FieldKind = 'C'
-	FldMessage          FieldKind = 'M'
-	FldDetail           FieldKind = 'D'
-	FldHint             FieldKind = 'H'
-	FldPosition         FieldKind = 'P'
-	FldInternalPosition FieldKind = 'p'
-	FldInternalQuery    FieldKind = 'q'
-	FldWhere            FieldKind = 'W'
-	FldSchema           FieldKind = 's'
-	FldTable            FieldKind = 't'
-	FldColumn           FieldKind = 'c'
-	FldDataType         FieldKind = 'd'
-	FldConstraint       FieldKind = 'n'
-	FldFile             FieldKind = 'F'
-	FldLine             FieldKind = 'L'
-	FldRoutine          FieldKind = 'R'
+	FieldKindSeverity         FieldKind = 'S'
+	FieldKindSeverityRaw      FieldKind = 'V'
+	FieldKindCode             FieldKind = 'C'
+	FieldKindMessage          FieldKind = 'M'
+	FieldKindDetail           FieldKind = 'D'
+	FieldKindHint             FieldKind = 'H'
+	FieldKindPosition         FieldKind = 'P'
+	FieldKindInternalPosition FieldKind = 'p'
+	FieldKindInternalQuery    FieldKind = 'q'
+	FieldKindWhere            FieldKind = 'W'
+	FieldKindSchema           FieldKind = 's'
+	FieldKindTable            FieldKind = 't'
+	FieldKindColumn           FieldKind = 'c'
+	FieldKindDataType         FieldKind = 'd'
+	FieldKindConstraint       FieldKind = 'n'
+	FieldKindFile             FieldKind = 'F'
+	FieldKindLine             FieldKind = 'L'
+	FieldKindRoutine          FieldKind = 'R'
 )
 
 type ObjectKind byte
 
 const (
-	ObjStatement ObjectKind = 'S'
-	ObjPortal    ObjectKind = 'P'
+	ObjectKindStatement ObjectKind = 'S'
+	ObjectKindPortal    ObjectKind = 'P'
 )
 
 type FormatKind byte
 
 const (
-	FmtText   FormatKind = 0
-	FmtBinary FormatKind = 1
+	FormatKindText   FormatKind = 0
+	FormatKindBinary FormatKind = 1
 )
 
 type TransactionStatusKind byte
 
 const (
-	TxIdle   TransactionStatusKind = 'I'
-	TxActive TransactionStatusKind = 'T'
-	TxError  TransactionStatusKind = 'E'
+	TransactionStatusKindIdle   TransactionStatusKind = 'I'
+	TransactionStatusKindActive TransactionStatusKind = 'T'
+	TransactionStatusKindError  TransactionStatusKind = 'E'
 )
 
 const (
