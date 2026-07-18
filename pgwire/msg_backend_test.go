@@ -19,18 +19,12 @@ func TestMsgBackendKeyData(t *testing.T) {
 
 	var m pgwire.MsgBackendKeyData
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
+	unmarshalTest(t, buf.Bytes(), &m, func(t *testing.T, m *pgwire.MsgBackendKeyData) {
 		require.Equal(t, int32(4321), m.ProcessID)
 		require.Equal(t, "hello world", string(m.SecretKey))
 	})
 
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
-	})
+	appendTest(t, &m, buf.Bytes())
 }
 
 func TestMsgBindComplete(t *testing.T) {
@@ -216,6 +210,27 @@ func TestMsgDataRow(t *testing.T) {
 		require.Equal(t, []byte("hello"), m.Columns[0])
 		require.Nil(t, m.Columns[1])
 		require.Equal(t, []byte("world"), m.Columns[2])
+	})
+
+	t.Run("AppendBinary", func(t *testing.T) {
+		b, err := m.AppendBinary(nil)
+		require.NoError(t, err)
+		require.Equal(t, buf.Bytes(), b)
+	})
+}
+
+func TestMsgEmptyQueryResponse(t *testing.T) {
+	t.Parallel()
+
+	buf := pgio.NewBuffer(nil)
+	buf.AppendByte(byte(pgwire.MessageKindEmptyQueryResponse))
+	buf.AppendInt32(4)
+
+	var m pgwire.MsgEmptyQueryResponse
+
+	t.Run("UnmarshalBinary", func(t *testing.T) {
+		err := m.UnmarshalBinary(buf.Bytes())
+		require.NoError(t, err)
 	})
 
 	t.Run("AppendBinary", func(t *testing.T) {
