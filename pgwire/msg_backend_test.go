@@ -19,12 +19,10 @@ func TestMsgBackendKeyData(t *testing.T) {
 
 	var m pgwire.MsgBackendKeyData
 
-	unmarshalTest(t, buf.Bytes(), &m, func(t *testing.T, m *pgwire.MsgBackendKeyData) {
+	testMessage(t, buf.Bytes(), &m, func(t *testing.T) {
 		require.Equal(t, int32(4321), m.ProcessID)
 		require.Equal(t, "hello world", string(m.SecretKey))
 	})
-
-	appendTest(t, &m, buf.Bytes())
 }
 
 func TestMsgBindComplete(t *testing.T) {
@@ -36,16 +34,7 @@ func TestMsgBindComplete(t *testing.T) {
 
 	var m pgwire.MsgBindComplete
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
-	})
+	testMessage(t, buf.Bytes(), &m, nil)
 }
 
 func TestMsgCloseComplete(t *testing.T) {
@@ -57,16 +46,7 @@ func TestMsgCloseComplete(t *testing.T) {
 
 	var m pgwire.MsgCloseComplete
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
-	})
+	testMessage(t, buf.Bytes(), &m, nil)
 }
 
 func TestMsgCommandComplete(t *testing.T) {
@@ -79,16 +59,8 @@ func TestMsgCommandComplete(t *testing.T) {
 
 	var m pgwire.MsgCommandComplete
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
+	testMessage(t, buf.Bytes(), &m, func(t *testing.T) {
 		require.Equal(t, "hello world", m.Tag)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
 	})
 }
 
@@ -106,21 +78,13 @@ func TestMsgCopyInResponse(t *testing.T) {
 
 	var m pgwire.MsgCopyInResponse
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
+	testMessage(t, buf.Bytes(), &m, func(t *testing.T) {
 		require.Equal(t, int8(pgwire.FormatKindBinary), m.Format)
 		require.Equal(t, []int16{
 			int16(pgwire.FormatKindBinary),
 			int16(pgwire.FormatKindBinary),
 			int16(pgwire.FormatKindBinary),
 		}, m.Columns)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
 	})
 }
 
@@ -138,21 +102,13 @@ func TestMsgCopyOutResponse(t *testing.T) {
 
 	var m pgwire.MsgCopyOutResponse
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
+	testMessage(t, buf.Bytes(), &m, func(t *testing.T) {
 		require.Equal(t, int8(pgwire.FormatKindBinary), m.Format)
 		require.Equal(t, []int16{
 			int16(pgwire.FormatKindBinary),
 			int16(pgwire.FormatKindBinary),
 			int16(pgwire.FormatKindBinary),
 		}, m.Columns)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
 	})
 }
 
@@ -170,21 +126,13 @@ func TestMsgCopyBothResponse(t *testing.T) {
 
 	var m pgwire.MsgCopyBothResponse
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
+	testMessage(t, buf.Bytes(), &m, func(t *testing.T) {
 		require.Equal(t, int8(pgwire.FormatKindBinary), m.Format)
 		require.Equal(t, []int16{
 			int16(pgwire.FormatKindBinary),
 			int16(pgwire.FormatKindBinary),
 			int16(pgwire.FormatKindBinary),
 		}, m.Columns)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
 	})
 }
 
@@ -203,19 +151,11 @@ func TestMsgDataRow(t *testing.T) {
 
 	var m pgwire.MsgDataRow
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
+	testMessage(t, buf.Bytes(), &m, func(t *testing.T) {
 		require.Len(t, m.Columns, 3)
 		require.Equal(t, []byte("hello"), m.Columns[0])
 		require.Nil(t, m.Columns[1])
 		require.Equal(t, []byte("world"), m.Columns[2])
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
 	})
 }
 
@@ -228,14 +168,5 @@ func TestMsgEmptyQueryResponse(t *testing.T) {
 
 	var m pgwire.MsgEmptyQueryResponse
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
-	})
+	testMessage(t, buf.Bytes(), &m, nil)
 }

@@ -7,18 +7,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func unmarshalTest[T pgwire.Message](t *testing.T, b []byte, m T, fn func(*testing.T, T)) {
+func testMessage(t *testing.T, b []byte, m pgwire.Message, fn func(*testing.T)) {
 	t.Run("UnmarshalBinary", func(t *testing.T) {
 		err := m.UnmarshalBinary(b)
 		require.NoError(t, err)
-		fn(t, m)
-	})
-}
 
-func appendTest[T pgwire.Message](t *testing.T, m T, want []byte) {
+		if fn != nil {
+			fn(t)
+		}
+	})
+
 	t.Run("AppendBinary", func(t *testing.T) {
 		got, err := m.AppendBinary(nil)
 		require.NoError(t, err)
-		require.Equal(t, want, got)
+		require.Equal(t, b, got)
 	})
 }

@@ -18,16 +18,7 @@ func TestMsgAuthenticationOk(t *testing.T) {
 
 	var m pgwire.MsgAuthenticationOk
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		result, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), result)
-	})
+	testMessage(t, buf.Bytes(), &m, nil)
 }
 
 func TestMsgAuthenticationKerberosV5(t *testing.T) {
@@ -40,16 +31,7 @@ func TestMsgAuthenticationKerberosV5(t *testing.T) {
 
 	var m pgwire.MsgAuthenticationKerberosV5
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		result, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), result)
-	})
+	testMessage(t, buf.Bytes(), &m, nil)
 }
 
 func TestMsgAuthenticationClearTextPassword(t *testing.T) {
@@ -62,16 +44,7 @@ func TestMsgAuthenticationClearTextPassword(t *testing.T) {
 
 	var m pgwire.MsgAuthenticationCleartextPassword
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		result, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), result)
-	})
+	testMessage(t, buf.Bytes(), &m, nil)
 }
 
 func TestMsgAuthenticationMD5Password(t *testing.T) {
@@ -85,16 +58,8 @@ func TestMsgAuthenticationMD5Password(t *testing.T) {
 
 	var m pgwire.MsgAuthenticationMD5Password
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
+	testMessage(t, buf.Bytes(), &m, func(t *testing.T) {
 		require.Equal(t, "4321", string(m.Salt[:]))
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
 	})
 }
 
@@ -108,16 +73,7 @@ func TestMsgAuthenticationGSS(t *testing.T) {
 
 	var m pgwire.MsgAuthenticationGSS
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		result, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), result)
-	})
+	testMessage(t, buf.Bytes(), &m, nil)
 }
 
 func TestMsgAuthenticationGSSContinue(t *testing.T) {
@@ -131,17 +87,8 @@ func TestMsgAuthenticationGSSContinue(t *testing.T) {
 
 	var m pgwire.MsgAuthenticationGSSContinue
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
-
+	testMessage(t, buf.Bytes(), &m, func(t *testing.T) {
 		require.Equal(t, "hello world", string(m.Data))
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
 	})
 }
 
@@ -155,16 +102,7 @@ func TestMsgAuthenticationSSPI(t *testing.T) {
 
 	var m pgwire.MsgAuthenticationSSPI
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		result, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), result)
-	})
+	testMessage(t, buf.Bytes(), &m, nil)
 }
 
 func TestMsgAuthenticationSASL(t *testing.T) {
@@ -179,16 +117,8 @@ func TestMsgAuthenticationSASL(t *testing.T) {
 
 	var m pgwire.MsgAuthenticationSASL
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
+	testMessage(t, buf.Bytes(), &m, func(t *testing.T) {
 		require.Equal(t, []string{"hello", "world"}, m.Mechanisms)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
 	})
 }
 
@@ -203,16 +133,8 @@ func TestMsgAuthenticationSASLContinue(t *testing.T) {
 
 	var m pgwire.MsgAuthenticationSASLContinue
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
+	testMessage(t, buf.Bytes(), &m, func(t *testing.T) {
 		require.Equal(t, "hello world", string(m.Data))
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
 	})
 }
 
@@ -227,15 +149,7 @@ func TestMsgAuthenticationSASLFinal(t *testing.T) {
 
 	var m pgwire.MsgAuthenticationSASLFinal
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
+	testMessage(t, buf.Bytes(), &m, func(t *testing.T) {
 		require.Equal(t, "hello world", string(m.Data))
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
 	})
 }
