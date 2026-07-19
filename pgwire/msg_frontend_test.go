@@ -30,20 +30,12 @@ func TestMsgBind(t *testing.T) {
 
 	var m pgwire.MsgBind
 
-	t.Run("UnmarshalBinary", func(t *testing.T) {
-		err := m.UnmarshalBinary(buf.Bytes())
-		require.NoError(t, err)
+	testMessage(t, buf.Bytes(), &m, func(t *testing.T) {
 		require.Equal(t, "hello world", m.DestinationName)
 		require.Equal(t, "lorem ipsum", m.SourceName)
 		require.Equal(t, []int16{int16(pgwire.FormatKindBinary), int16(pgwire.FormatKindBinary), int16(pgwire.FormatKindBinary)}, m.ParameterFormatCodes)
 		require.Equal(t, [][]byte{[]byte("lorem"), []byte("ipsum"), []byte("dolor")}, m.ParameterData)
 		require.Equal(t, []int16{int16(pgwire.FormatKindBinary), int16(pgwire.FormatKindBinary), int16(pgwire.FormatKindBinary)}, m.ColumnFormatCodes)
-	})
-
-	t.Run("AppendBinary", func(t *testing.T) {
-		b, err := m.AppendBinary(nil)
-		require.NoError(t, err)
-		require.Equal(t, buf.Bytes(), b)
 	})
 }
 
