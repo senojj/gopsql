@@ -11,9 +11,9 @@ var _ Frontend = &MsgBind{}
 type MsgBind struct {
 	DestinationName      string
 	SourceName           string
-	ParameterFormatCodes []int16
+	ParameterFormatCodes []FormatKind
 	ParameterData        [][]byte
-	ColumnFormatCodes    []int16
+	ColumnFormatCodes    []FormatKind
 }
 
 func (x *MsgBind) message() {}
@@ -83,7 +83,10 @@ func (x *MsgBind) AppendBinary(b []byte) ([]byte, error) {
 	buf.AppendString(x.DestinationName)
 	buf.AppendString(x.SourceName)
 	buf.AppendInt16(int16(paramFmtCodeCount))
-	buf.AppendInt16(x.ParameterFormatCodes...)
+
+	for _, format := range x.ParameterFormatCodes {
+		buf.AppendInt16(int16(format))
+	}
 	buf.AppendInt16(int16(paramDataCount))
 
 	for i := range paramDataCount {
@@ -93,7 +96,10 @@ func (x *MsgBind) AppendBinary(b []byte) ([]byte, error) {
 	}
 
 	buf.AppendInt16(int16(colFmtCodeCount))
-	buf.AppendInt16(x.ColumnFormatCodes...)
+
+	for _, format := range x.ColumnFormatCodes {
+		buf.AppendInt16(int16(format))
+	}
 	return buf.Bytes(), nil
 }
 
@@ -119,14 +125,14 @@ func (x *MsgBind) UnmarshalBinary(b []byte) error {
 	if err != nil {
 		return invalidFormat(err)
 	}
-	parameterFormatCodes := make([]int16, paramFmtCodeCount)
+	parameterFormatCodes := make([]FormatKind, paramFmtCodeCount)
 
 	for i := range paramFmtCodeCount {
 		code, err := buf.ShiftInt16()
 		if err != nil {
 			return invalidFormat(err)
 		}
-		parameterFormatCodes[i] = code
+		parameterFormatCodes[i] = FormatKind(code)
 	}
 
 	paramDataCount, err := buf.ShiftInt16()
@@ -152,14 +158,14 @@ func (x *MsgBind) UnmarshalBinary(b []byte) error {
 	if err != nil {
 		return invalidFormat(err)
 	}
-	columnFormatCodes := make([]int16, colFmtCodeCount)
+	columnFormatCodes := make([]FormatKind, colFmtCodeCount)
 
 	for i := range colFmtCodeCount {
 		data, err := buf.ShiftInt16()
 		if err != nil {
 			return invalidFormat(err)
 		}
-		columnFormatCodes[i] = data
+		columnFormatCodes[i] = FormatKind(data)
 	}
 
 	if buf.Len() > 0 {
@@ -246,8 +252,8 @@ var _ Message = &MsgClose{}
 var _ Frontend = &MsgClose{}
 
 type MsgClose struct {
-	Kind byte
-	Name string
+	ObjectKind ObjectKind
+	ObjectName string
 }
 
 func (x *MsgClose) message() {}
@@ -257,7 +263,7 @@ func (x *MsgClose) frontend() {}
 func (x *MsgClose) AppendBinary(b []byte) ([]byte, error) {
 	const sizeKind = 1
 
-	sizeName := len(x.Name) + 1 // null terminated string
+	sizeName := len(x.ObjectName) + 1 // null terminated string
 
 	length := sizeMessageLength + sizeKind + sizeName
 
@@ -271,8 +277,8 @@ func (x *MsgClose) AppendBinary(b []byte) ([]byte, error) {
 	buf.Grow(size)
 	buf.AppendByte(byte(MessageKindClose))
 	buf.AppendInt32(int32(length))
-	buf.AppendByte(x.Kind)
-	buf.AppendString(x.Name)
+	buf.AppendByte(byte(x.ObjectKind))
+	buf.AppendString(x.ObjectName)
 	return buf.Bytes(), nil
 }
 
@@ -293,8 +299,8 @@ func (x *MsgClose) UnmarshalBinary(b []byte) error {
 	if err != nil {
 		return invalidFormat(err)
 	}
-	x.Kind = kind
-	x.Name = name
+	x.ObjectKind = ObjectKind(kind)
+	x.ObjectName = name
 	return nil
 }
 
@@ -337,6 +343,10 @@ func (x *MsgCopyFail) UnmarshalBinary(b []byte) error {
 	if err != nil {
 		return invalidFormat(err)
 	}
+
+	if len(b) > 0 {
+		return invalidFormat(pgio.ErrValueOverflow)
+	}
 	x.Message = m
 	return nil
 }
@@ -345,8 +355,8 @@ var _ Message = &MsgDescribe{}
 var _ Frontend = &MsgDescribe{}
 
 type MsgDescribe struct {
-	Kind byte
-	Name string
+	ObjectKind ObjectKind
+	ObjectName string
 }
 
 func (x *MsgDescribe) message() {}
@@ -358,7 +368,7 @@ func (x *MsgDescribe) AppendBinary(b []byte) ([]byte, error) {
 
 	length := sizeMessageLength +
 		sizeKind +
-		len(x.Name) + 1 // null terminated string
+		len(x.ObjectName) + 1 // null terminated string
 
 	if length > math.MaxInt32 {
 		return b, invalidFormat(pgio.ErrValueOverflow)
@@ -370,8 +380,8 @@ func (x *MsgDescribe) AppendBinary(b []byte) ([]byte, error) {
 	buf.Grow(size)
 	buf.AppendByte(byte(MessageKindDescribe))
 	buf.AppendInt32(int32(length))
-	buf.AppendByte(x.Kind)
-	buf.AppendString(x.Name)
+	buf.AppendByte(byte(x.ObjectKind))
+	buf.AppendString(x.ObjectName)
 	return buf.Bytes(), nil
 }
 
@@ -393,8 +403,8 @@ func (x *MsgDescribe) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	x.Kind = kind
-	x.Name = name
+	x.ObjectKind = ObjectKind(kind)
+	x.ObjectName = name
 	return nil
 }
 
@@ -402,8 +412,8 @@ var _ Message = &MsgExecute{}
 var _ Frontend = &MsgExecute{}
 
 type MsgExecute struct {
-	Portal   string
-	RowLimit int32
+	PortalName string
+	RowLimit   int32
 }
 
 func (x *MsgExecute) message() {}
@@ -413,7 +423,7 @@ func (x *MsgExecute) frontend() {}
 func (x *MsgExecute) AppendBinary(b []byte) ([]byte, error) {
 	const sizeRowLimit = 4
 
-	sizePortal := len(x.Portal) + 1 // null terminated string
+	sizePortal := len(x.PortalName) + 1 // null terminated string
 
 	length := sizeMessageLength + sizePortal + sizeRowLimit
 
@@ -427,7 +437,7 @@ func (x *MsgExecute) AppendBinary(b []byte) ([]byte, error) {
 	buf.Grow(size)
 	buf.AppendByte(byte(MessageKindExecute))
 	buf.AppendInt32(int32(length))
-	buf.AppendString(x.Portal)
+	buf.AppendString(x.PortalName)
 	buf.AppendInt32(x.RowLimit)
 	return buf.Bytes(), nil
 }
@@ -450,21 +460,21 @@ func (x *MsgExecute) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	x.Portal = portal
+	x.PortalName = portal
 	x.RowLimit = limit
 	return nil
 }
 
-var _ Message = &Flush{}
-var _ Frontend = &Flush{}
+var _ Message = &MsgFlush{}
+var _ Frontend = &MsgFlush{}
 
-type Flush struct{}
+type MsgFlush struct{}
 
-func (x *Flush) message() {}
+func (x *MsgFlush) message() {}
 
-func (x *Flush) frontend() {}
+func (x *MsgFlush) frontend() {}
 
-func (x *Flush) AppendBinary(b []byte) ([]byte, error) {
+func (x *MsgFlush) AppendBinary(b []byte) ([]byte, error) {
 	const length = sizeMessageLength
 	const size = sizeMessageKind + length
 
@@ -475,7 +485,7 @@ func (x *Flush) AppendBinary(b []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (x *Flush) UnmarshalBinary(b []byte) error {
+func (x *MsgFlush) UnmarshalBinary(b []byte) error {
 	b, err := shiftHeader(MessageKindFlush, b)
 	if err != nil {
 		return invalidFormat(err)
@@ -497,10 +507,10 @@ type MsgFunctionCall struct {
 	// arguments, or that all arguments use the default format (text); or one,
 	// in which case the specified format code is applied to all arguments; or
 	// its element count may equal the total number of arguments.
-	ArgumentFormats []int16
+	ArgumentFormats []FormatKind
 
 	ArgumentValues [][]byte
-	ResultFormat   int16
+	ResultFormat   FormatKind
 }
 
 func (x *MsgFunctionCall) message() {}
@@ -559,7 +569,10 @@ func (x *MsgFunctionCall) AppendBinary(b []byte) ([]byte, error) {
 	buf.AppendInt32(int32(length))
 	buf.AppendInt32(x.ObjectID)
 	buf.AppendInt16(int16(countFormats))
-	buf.AppendInt16(x.ArgumentFormats...)
+
+	for _, format := range x.ArgumentFormats {
+		buf.AppendInt16(int16(format))
+	}
 	buf.AppendInt16(int16(countArguments))
 
 	for i := range countArguments {
@@ -568,7 +581,7 @@ func (x *MsgFunctionCall) AppendBinary(b []byte) ([]byte, error) {
 		buf.AppendInt32(int32(length))
 		buf.AppendByte(value...)
 	}
-	buf.AppendInt16(x.ResultFormat)
+	buf.AppendInt16(int16(x.ResultFormat))
 	return buf.Bytes(), nil
 }
 
@@ -590,13 +603,13 @@ func (x *MsgFunctionCall) UnmarshalBinary(b []byte) error {
 		return invalidFormat(err)
 	}
 
-	formats := make([]int16, 0, countFormats)
+	formats := make([]FormatKind, 0, countFormats)
 	for range countFormats {
 		format, err := buf.ShiftInt16()
 		if err != nil {
 			return invalidFormat(err)
 		}
-		formats = append(formats, format)
+		formats = append(formats, FormatKind(format))
 	}
 
 	countArguments, err := buf.ShiftInt16()
@@ -623,7 +636,7 @@ func (x *MsgFunctionCall) UnmarshalBinary(b []byte) error {
 	x.ObjectID = objectID
 	x.ArgumentFormats = formats
 	x.ArgumentValues = arguments
-	x.ResultFormat = resultFormat
+	x.ResultFormat = FormatKind(resultFormat)
 	return nil
 }
 
@@ -844,6 +857,10 @@ func (x *MsgPasswordMessage) UnmarshalBinary(b []byte) error {
 	password, b, err := pgio.ShiftString(b)
 	if err != nil {
 		return invalidFormat(err)
+	}
+
+	if len(b) > 0 {
+		return invalidFormat(pgio.ErrValueOverflow)
 	}
 
 	x.Password = password
